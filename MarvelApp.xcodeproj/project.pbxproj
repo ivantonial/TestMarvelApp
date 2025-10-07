@@ -6,6 +6,15 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		56A0DAB42E95898B009D8CBE /* Core in Frameworks */ = {isa = PBXBuildFile; productRef = 56A0DAB32E95898B009D8CBE /* Core */; };
+		56A0DAB62E95898F009D8CBE /* Networking in Frameworks */ = {isa = PBXBuildFile; productRef = 56A0DAB52E95898F009D8CBE /* Networking */; };
+		56A0DAB82E958992009D8CBE /* MarvelAPI in Frameworks */ = {isa = PBXBuildFile; productRef = 56A0DAB72E958992009D8CBE /* MarvelAPI */; };
+		56A0DABA2E958996009D8CBE /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 56A0DAB92E958996009D8CBE /* DesignSystem */; };
+		56A0DABC2E95899B009D8CBE /* CharacterList in Frameworks */ = {isa = PBXBuildFile; productRef = 56A0DABB2E95899B009D8CBE /* CharacterList */; };
+		56A0DABE2E9589A0009D8CBE /* AppCoordinator in Frameworks */ = {isa = PBXBuildFile; productRef = 56A0DABD2E9589A0009D8CBE /* AppCoordinator */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		567170A72E953BD3008FDB22 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -27,6 +36,7 @@
 		567170992E953BD2008FDB22 /* MarvelApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MarvelApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		567170A62E953BD3008FDB22 /* MarvelAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MarvelAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		567170B02E953BD3008FDB22 /* MarvelAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MarvelAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		56A0DAC42E958F20009D8CBE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -52,6 +62,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				56A0DABC2E95899B009D8CBE /* CharacterList in Frameworks */,
+				56A0DAB62E95898F009D8CBE /* Networking in Frameworks */,
+				56A0DAB82E958992009D8CBE /* MarvelAPI in Frameworks */,
+				56A0DABE2E9589A0009D8CBE /* AppCoordinator in Frameworks */,
+				56A0DAB42E95898B009D8CBE /* Core in Frameworks */,
+				56A0DABA2E958996009D8CBE /* DesignSystem in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -75,9 +91,11 @@
 		567170902E953BD2008FDB22 = {
 			isa = PBXGroup;
 			children = (
+				56A0DAC42E958F20009D8CBE /* Info.plist */,
 				5671709B2E953BD2008FDB22 /* MarvelApp */,
 				567170A92E953BD3008FDB22 /* MarvelAppTests */,
 				567170B32E953BD3008FDB22 /* MarvelAppUITests */,
+				56A0DAB22E95898B009D8CBE /* Frameworks */,
 				5671709A2E953BD2008FDB22 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -90,6 +108,13 @@
 				567170B02E953BD3008FDB22 /* MarvelAppUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		56A0DAB22E95898B009D8CBE /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -112,6 +137,12 @@
 			);
 			name = MarvelApp;
 			packageProductDependencies = (
+				56A0DAB32E95898B009D8CBE /* Core */,
+				56A0DAB52E95898F009D8CBE /* Networking */,
+				56A0DAB72E958992009D8CBE /* MarvelAPI */,
+				56A0DAB92E958996009D8CBE /* DesignSystem */,
+				56A0DABB2E95899B009D8CBE /* CharacterList */,
+				56A0DABD2E9589A0009D8CBE /* AppCoordinator */,
 			);
 			productName = MarvelApp;
 			productReference = 567170992E953BD2008FDB22 /* MarvelApp.app */;
@@ -195,6 +226,14 @@
 			);
 			mainGroup = 567170902E953BD2008FDB22;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				56A0DAAC2E9587D5009D8CBE /* XCLocalSwiftPackageReference "Modules/Core" */,
+				56A0DAAD2E9587E4009D8CBE /* XCLocalSwiftPackageReference "Modules/Networking" */,
+				56A0DAAE2E9587F6009D8CBE /* XCLocalSwiftPackageReference "Modules/MarvelAPI" */,
+				56A0DAAF2E958803009D8CBE /* XCLocalSwiftPackageReference "Modules/DesignSystem" */,
+				56A0DAB02E958815009D8CBE /* XCLocalSwiftPackageReference "Modules/Features/CharacterList" */,
+				56A0DAB12E95881E009D8CBE /* XCLocalSwiftPackageReference "Modules/AppCoordinator" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 5671709A2E953BD2008FDB22 /* Products */;
 			projectDirPath = "";
@@ -271,6 +310,8 @@
 /* Begin XCBuildConfiguration section */
 		567170B82E953BD3008FDB22 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = 5671709B2E953BD2008FDB22 /* MarvelApp */;
+			baseConfigurationReferenceRelativePath = Config/Secrets.xcconfig;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -335,6 +376,8 @@
 		};
 		567170B92E953BD3008FDB22 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = 5671709B2E953BD2008FDB22 /* MarvelApp */;
+			baseConfigurationReferenceRelativePath = Config/Secrets.xcconfig;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -399,7 +442,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = RAPUF7DNCF;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "$(PROJECT_DIR)/Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -431,7 +475,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = RAPUF7DNCF;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "$(PROJECT_DIR)/Info.plist";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -578,6 +623,66 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		56A0DAAC2E9587D5009D8CBE /* XCLocalSwiftPackageReference "Modules/Core" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Modules/Core;
+		};
+		56A0DAAD2E9587E4009D8CBE /* XCLocalSwiftPackageReference "Modules/Networking" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Modules/Networking;
+		};
+		56A0DAAE2E9587F6009D8CBE /* XCLocalSwiftPackageReference "Modules/MarvelAPI" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Modules/MarvelAPI;
+		};
+		56A0DAAF2E958803009D8CBE /* XCLocalSwiftPackageReference "Modules/DesignSystem" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Modules/DesignSystem;
+		};
+		56A0DAB02E958815009D8CBE /* XCLocalSwiftPackageReference "Modules/Features/CharacterList" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Modules/Features/CharacterList;
+		};
+		56A0DAB12E95881E009D8CBE /* XCLocalSwiftPackageReference "Modules/AppCoordinator" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Modules/AppCoordinator;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		56A0DAB32E95898B009D8CBE /* Core */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 56A0DAAC2E9587D5009D8CBE /* XCLocalSwiftPackageReference "Modules/Core" */;
+			productName = Core;
+		};
+		56A0DAB52E95898F009D8CBE /* Networking */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 56A0DAAD2E9587E4009D8CBE /* XCLocalSwiftPackageReference "Modules/Networking" */;
+			productName = Networking;
+		};
+		56A0DAB72E958992009D8CBE /* MarvelAPI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 56A0DAAE2E9587F6009D8CBE /* XCLocalSwiftPackageReference "Modules/MarvelAPI" */;
+			productName = MarvelAPI;
+		};
+		56A0DAB92E958996009D8CBE /* DesignSystem */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 56A0DAAF2E958803009D8CBE /* XCLocalSwiftPackageReference "Modules/DesignSystem" */;
+			productName = DesignSystem;
+		};
+		56A0DABB2E95899B009D8CBE /* CharacterList */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 56A0DAB02E958815009D8CBE /* XCLocalSwiftPackageReference "Modules/Features/CharacterList" */;
+			productName = CharacterList;
+		};
+		56A0DABD2E9589A0009D8CBE /* AppCoordinator */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 56A0DAB12E95881E009D8CBE /* XCLocalSwiftPackageReference "Modules/AppCoordinator" */;
+			productName = AppCoordinator;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 567170912E953BD2008FDB22 /* Project object */;
 }

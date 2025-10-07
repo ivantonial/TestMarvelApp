@@ -1,0 +1,48 @@
+# ========================================
+# Xcode & macOS
+# ========================================
+.DS_Store
+xcuserdata/
+*.xcuserstate
+*.xccheckout
+DerivedData/
+build/
+
+# ========================================
+# Swift Package Manager
+# ========================================
+.build/
+Packages/
+Package.resolved
+
+# ========================================
+# Tuist (caso use)
+# ========================================
+Tuist/Derived/
+Tuist/Cache/
+
+# ========================================
+# CocoaPods (caso use futuramente)
+# ========================================
+Pods/
+Podfile.lock
+
+# ========================================
+# Secrets & Configs
+# ========================================
+Config/Secrets.xcconfig
+
+# ========================================
+# Fastlane (caso use futuramente)
+# ========================================
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# ========================================
+# IDEs
+# ========================================
+.idea/
+.vscode/
+*.swp
