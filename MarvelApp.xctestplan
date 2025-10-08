@@ -1,0 +1,37 @@
+{
+  "configurations" : [
+    {
+      "id" : "58B23234-41F7-46AD-B7FC-59B255B84850",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : false,
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:MarvelApp.xcodeproj",
+      "identifier" : "567170982E953BD2008FDB22",
+      "name" : "MarvelApp"
+    }
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:MarvelApp.xcodeproj",
+        "identifier" : "567170A52E953BD3008FDB22",
+        "name" : "MarvelAppTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:MarvelApp.xcodeproj",
+        "identifier" : "567170AF2E953BD3008FDB22",
+        "name" : "MarvelAppUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

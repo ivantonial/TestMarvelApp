@@ -33,6 +33,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		564818D82E9705BA0087FC53 /* MarvelApp.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = MarvelApp.xctestplan; sourceTree = "<group>"; };
 		567170992E953BD2008FDB22 /* MarvelApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MarvelApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		567170A62E953BD3008FDB22 /* MarvelAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MarvelAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		567170B02E953BD3008FDB22 /* MarvelAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MarvelAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -91,6 +92,7 @@
 		567170902E953BD2008FDB22 = {
 			isa = PBXGroup;
 			children = (
+				564818D82E9705BA0087FC53 /* MarvelApp.xctestplan */,
 				56A0DAC42E958F20009D8CBE /* Info.plist */,
 				5671709B2E953BD2008FDB22 /* MarvelApp */,
 				567170A92E953BD3008FDB22 /* MarvelAppTests */,
