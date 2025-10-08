@@ -7,7 +7,6 @@ on:
     branches: [ main, dev ]
 
 env:
-  XCODE_VERSION: '16.1'
   SCHEME: 'MarvelApp'
   PROJECT_PATH: 'MarvelApp.xcodeproj'
   SECRETS_PATH: 'MarvelApp/Config'
@@ -15,16 +14,28 @@ env:
 jobs:
   build-and-test:
     name: Build and Test
-    runs-on: macos-14
+    runs-on: macos-15         # ✅ macOS 15 tem versões mais recentes
 
     steps:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Select Xcode
+    - name: List Available Xcode Versions
       run: |
-        sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
+        echo "📱 Available Xcode versions:"
+        ls /Applications/ | grep Xcode
+
+    - name: Select Latest Available Xcode
+      run: |
+        # Seleciona a versão mais recente disponível
+        LATEST_XCODE=$(ls /Applications/ | grep "Xcode_" | sort -V | tail -1)
+        if [ -z "$LATEST_XCODE" ]; then
+          LATEST_XCODE="Xcode.app"
+        fi
+        echo "📱 Using: $LATEST_XCODE"
+        sudo xcode-select -s /Applications/$LATEST_XCODE/Contents/Developer
         xcodebuild -version
+        swift --version
 
     - name: Setup Secrets
       run: |
@@ -32,16 +43,38 @@ jobs:
         sed -i '' 's/YOUR_PUBLIC_KEY_HERE/${{ secrets.MARVEL_PUBLIC_KEY }}/' ${{ env.SECRETS_PATH }}/Secrets.xcconfig
         sed -i '' 's/YOUR_PRIVATE_KEY_HERE/${{ secrets.MARVEL_PRIVATE_KEY }}/' ${{ env.SECRETS_PATH }}/Secrets.xcconfig
 
-    - name: Cache SPM
+    - name: Cache SPM Dependencies
       uses: actions/cache@v4
       with:
-        path: ~/Library/Developer/Xcode/DerivedData
+        path: |
+          ~/Library/Developer/Xcode/DerivedData
+          .build
         key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+        restore-keys: |
+          ${{ runner.os }}-spm-
+
+    - name: Clean Build Folder
+      run: |
+        rm -rf ~/Library/Developer/Xcode/DerivedData
+        rm -rf .build
 
     - name: Build and Test
       run: |
+        # Detecta automaticamente um simulador disponível
+        SIMULATORS=$(xcrun simctl list devices available iPhone | grep -v "unavailable" | grep "iPhone" | head -1)
+        DEVICE_NAME=$(echo "$SIMULATORS" | sed 's/.*(\(.*\)).*/\1/' | xargs)
+        
+        if [ -z "$DEVICE_NAME" ]; then
+          echo "❌ No iPhone simulator found"
+          exit 1
+        fi
+        
+        echo "📱 Using simulator: $DEVICE_NAME"
+        
         xcodebuild test \
           -project ${{ env.PROJECT_PATH }} \
           -scheme ${{ env.SCHEME }} \
-          -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=17.5' \
-          -enableCodeCoverage YES
+          -destination "platform=iOS Simulator,id=$DEVICE_NAME" \
+          -enableCodeCoverage YES \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO
