@@ -7,8 +7,7 @@ on:
     branches: [ main, dev ]
 
 env:
-  XCODE_VERSION: '15.0'
-  IOS_VERSION: '16.0'
+  XCODE_VERSION: '16.1'
   SCHEME: 'MarvelApp'
   PROJECT_PATH: 'MarvelApp.xcodeproj'
   SECRETS_PATH: 'MarvelApp/Config'
@@ -19,73 +18,30 @@ jobs:
     runs-on: macos-14
 
     steps:
-    # 1️⃣ Faz o checkout do código
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
-    # 2️⃣ Seleciona a versão correta do Xcode
     - name: Select Xcode
-      run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
-
-    # 3️⃣ Valida integridade do projeto
-    - name: Validate Project File
       run: |
-        echo "🔍 Validating project.pbxproj integrity..."
-        if ! plutil -lint ${{ env.PROJECT_PATH }}/project.pbxproj; then
-          echo "❌ project.pbxproj is corrupted or invalid"
-          exit 1
-        fi
-        
-        echo "🔍 Checking for merge conflicts..."
-        if grep -rq "<<<<<<" ${{ env.PROJECT_PATH }}/ || \
-           grep -rq ">>>>>>" ${{ env.PROJECT_PATH }}/ || \
-           grep -rq "======" ${{ env.PROJECT_PATH }}/; then
-          echo "❌ Merge conflict markers found in project files"
-          exit 1
-        fi
-        
-        echo "✅ Project file is valid"
+        sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
+        xcodebuild -version
 
-    # 4️⃣ Copia e injeta as secrets da API Marvel
     - name: Setup Secrets
       run: |
         cp ${{ env.SECRETS_PATH }}/Secrets-model.xcconfig ${{ env.SECRETS_PATH }}/Secrets.xcconfig
         sed -i '' 's/YOUR_PUBLIC_KEY_HERE/${{ secrets.MARVEL_PUBLIC_KEY }}/' ${{ env.SECRETS_PATH }}/Secrets.xcconfig
         sed -i '' 's/YOUR_PRIVATE_KEY_HERE/${{ secrets.MARVEL_PRIVATE_KEY }}/' ${{ env.SECRETS_PATH }}/Secrets.xcconfig
 
-    # 5️⃣ Cache das dependências Swift Package Manager
-    - name: Cache SPM Dependencies
-      uses: actions/cache@v3
+    - name: Cache SPM
+      uses: actions/cache@v4
       with:
-        path: |
-          ~/Library/Developer/Xcode/DerivedData
-          .build
+        path: ~/Library/Developer/Xcode/DerivedData
         key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
-        restore-keys: |
-          ${{ runner.os }}-spm-
 
-    # 6️⃣ Resolve dependências do projeto
-    - name: Resolve Dependencies
+    - name: Build and Test
       run: |
-        xcodebuild -resolvePackageDependencies \
-          -project ${{ env.PROJECT_PATH }} \
-          -scheme ${{ env.SCHEME }}
-
-    # 7️⃣ Compila o projeto para teste
-    - name: Build
-      run: |
-        xcodebuild build-for-testing \
+        xcodebuild test \
           -project ${{ env.PROJECT_PATH }} \
           -scheme ${{ env.SCHEME }} \
-          -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=${{ env.IOS_VERSION }}' \
-          -derivedDataPath build
-
-    # 8️⃣ Executa os testes automatizados
-    - name: Run Tests
-      run: |
-        xcodebuild test-without-building \
-          -project ${{ env.PROJECT_PATH }} \
-          -scheme ${{ env.SCHEME }} \
-          -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=${{ env.IOS_VERSION }}' \
-          -derivedDataPath build \
+          -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=17.5' \
           -enableCodeCoverage YES
