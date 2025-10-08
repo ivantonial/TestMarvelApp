@@ -28,6 +28,9 @@ jobs:
         fi
         sudo xcode-select -s /Applications/$LATEST_XCODE/Contents/Developer
         xcodebuild -version
+        
+        echo "📱 Available SDKs:"
+        xcodebuild -showsdks
 
     - name: Setup Secrets
       run: |
@@ -43,9 +46,15 @@ jobs:
 
     - name: Build and Test
       run: |
-        # Tenta iOS 18.x primeiro (estável), depois iOS 26.0 (beta)
-        for IOS_VER in "18.6" "18.5" "18.4" "26.0"; do
-          echo "🔍 Trying iOS $IOS_VER..."
+        echo "🔍 Finding compatible simulator and SDK..."
+        
+        # Lista SDKs disponíveis e pega o mais recente do iOS Simulator
+        AVAILABLE_SDK=$(xcodebuild -showsdks | grep "iphonesimulator" | tail -1 | awk '{print $NF}')
+        
+        echo "✅ Using SDK: $AVAILABLE_SDK"
+        
+        # Procura por iPhone no iOS 18.x
+        for IOS_VER in "18.6" "18.5" "18.4"; do
           DEVICE_LINE=$(xcrun simctl list devices "iOS $IOS_VER" 2>/dev/null | grep "iPhone" | head -1)
           
           if [ -n "$DEVICE_LINE" ]; then
@@ -58,13 +67,16 @@ jobs:
             xcrun simctl boot "$DEVICE_ID" 2>/dev/null || true
             sleep 5
             
+            echo "🏗️ Building and testing..."
             xcodebuild test \
               -project ${{ env.PROJECT_PATH }} \
               -scheme ${{ env.SCHEME }} \
+              -sdk "$AVAILABLE_SDK" \
               -destination "platform=iOS Simulator,id=$DEVICE_ID" \
               -enableCodeCoverage YES \
               CODE_SIGN_IDENTITY="" \
-              CODE_SIGNING_REQUIRED=NO
+              CODE_SIGNING_REQUIRED=NO \
+              IPHONEOS_DEPLOYMENT_TARGET=16.0
             
             exit 0
           fi
