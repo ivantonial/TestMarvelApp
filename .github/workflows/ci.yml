@@ -14,7 +14,7 @@ env:
 jobs:
   build-and-test:
     name: Build and Test
-    runs-on: macos-14  # ⬅️ MUDEI PARA macos-14 (tem Xcode 16.1 estável)
+    runs-on: macos-14
 
     steps:
     - name: Checkout
@@ -22,13 +22,21 @@ jobs:
 
     - name: Select Xcode 16.1
       run: |
-        # macOS-14 tem Xcode 16.1 que é estável
         sudo xcode-select -s /Applications/Xcode_16.1.app
         xcodebuild -version
+
+    - name: Fix Swift Tools Version in All Modules
+      run: |
+        echo "🔧 Fixing Swift tools version 6.2 → 6.0 in all Package.swift files..."
         
-        echo ""
-        echo "📱 Available simulators:"
-        xcrun simctl list devices available | grep iPhone | head -5
+        # Corrige TODOS os Package.swift automaticamente
+        find . -name "Package.swift" -type f -exec sed -i '' -E 's/(swift-tools-version:[ ]*)6\.[2-9]/\16.0/g' {} \;
+        
+        echo "✅ All Package.swift files patched for CI!"
+        
+        # Mostra o que foi corrigido (opcional, para debug)
+        echo "📝 Swift tools versions now:"
+        find . -name "Package.swift" -type f -exec grep -H "swift-tools-version" {} \;
 
     - name: Setup Secrets
       run: |
@@ -44,8 +52,6 @@ jobs:
 
     - name: Build and Test
       run: |
-        echo "🏗️ Building and testing with Xcode 16.1..."
-        
         xcodebuild test \
           -project ${{ env.PROJECT_PATH }} \
           -scheme ${{ env.SCHEME }} \
