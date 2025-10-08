@@ -18,6 +18,10 @@ jobs:
     name: Build and Test
     runs-on: macos-14
 
+    defaults:
+      run:
+        working-directory: MarvelApp
+
     steps:
     - name: Checkout
       uses: actions/checkout@v3
