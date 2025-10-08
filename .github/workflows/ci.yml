@@ -29,11 +29,6 @@ jobs:
         sudo xcode-select -s /Applications/$LATEST_XCODE/Contents/Developer
         xcodebuild -version
 
-    - name: List Available Runtimes
-      run: |
-        echo "📱 Available runtimes:"
-        xcrun simctl list runtimes
-
     - name: Setup Secrets
       run: |
         cp ${{ env.SECRETS_PATH }}/Secrets-model.xcconfig ${{ env.SECRETS_PATH }}/Secrets.xcconfig
@@ -46,34 +41,34 @@ jobs:
         path: ~/Library/Developer/Xcode/DerivedData
         key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
 
-    - name: Build and Test  
+    - name: Build and Test
       run: |
-        echo "🔍 Using iOS 26.0 (available runtime)..."
+        # Tenta iOS 18.x primeiro (estável), depois iOS 26.0 (beta)
+        for IOS_VER in "18.6" "18.5" "18.4" "26.0"; do
+          echo "🔍 Trying iOS $IOS_VER..."
+          DEVICE_LINE=$(xcrun simctl list devices "iOS $IOS_VER" 2>/dev/null | grep "iPhone" | head -1)
+          
+          if [ -n "$DEVICE_LINE" ]; then
+            DEVICE_ID=$(echo "$DEVICE_LINE" | grep -oE "\([A-F0-9-]{36}\)" | tr -d "()")
+            DEVICE_NAME=$(echo "$DEVICE_LINE" | sed -E 's/^[[:space:]]*([^(]+).*/\1/' | xargs)
+            
+            echo "✅ Found: $DEVICE_NAME (iOS $IOS_VER)"
+            echo "   UUID: $DEVICE_ID"
+            
+            xcrun simctl boot "$DEVICE_ID" 2>/dev/null || true
+            sleep 5
+            
+            xcodebuild test \
+              -project ${{ env.PROJECT_PATH }} \
+              -scheme ${{ env.SCHEME }} \
+              -destination "platform=iOS Simulator,id=$DEVICE_ID" \
+              -enableCodeCoverage YES \
+              CODE_SIGN_IDENTITY="" \
+              CODE_SIGNING_REQUIRED=NO
+            
+            exit 0
+          fi
+        done
         
-        # Usa iOS 26.0 que está disponível
-        DEVICE_LINE=$(xcrun simctl list devices "iOS 26.0" | grep "iPhone" | head -1)
-        
-        if [ -z "$DEVICE_LINE" ]; then
-          echo "❌ No iPhone found for iOS 26.0"
-          exit 1
-        fi
-        
-        DEVICE_ID=$(echo "$DEVICE_LINE" | grep -oE "\([A-F0-9-]{36}\)" | tr -d "()")
-        DEVICE_NAME=$(echo "$DEVICE_LINE" | sed -E 's/^[[:space:]]*([^(]+).*/\1/' | xargs)
-        
-        echo "✅ Using: $DEVICE_NAME (iOS 26.0)"
-        echo "   UUID: $DEVICE_ID"
-        
-        echo "🚀 Booting simulator..."
-        xcrun simctl boot "$DEVICE_ID" || true
-        sleep 5
-        
-        echo "🏗️ Building and testing..."
-        xcodebuild test \
-          -project ${{ env.PROJECT_PATH }} \
-          -scheme ${{ env.SCHEME }} \
-          -destination "platform=iOS Simulator,id=$DEVICE_ID" \
-          -enableCodeCoverage YES \
-          CODE_SIGN_IDENTITY="" \
-          CODE_SIGNING_REQUIRED=NO \
-          IPHONEOS_DEPLOYMENT_TARGET=16.0
+        echo "❌ No compatible iPhone simulator found!"
+        exit 1
