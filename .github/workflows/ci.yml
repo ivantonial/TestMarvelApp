@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+
+env:
+  XCODE_VERSION: '15.0'
+  IOS_VERSION: '16.0'
+  SCHEME: 'MarvelApp'
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: macos-14
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      
+    - name: Select Xcode
+      run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
+      
+    - name: Setup Secrets
+      run: |
+        cp MarvelApp/Secrets-model.xcconfig MarvelApp/Secrets.xcconfig
+        sed -i '' 's/YOUR_PUBLIC_KEY_HERE/${{ secrets.MARVEL_PUBLIC_KEY }}/' MarvelApp/Secrets.xcconfig
+        sed -i '' 's/YOUR_PRIVATE_KEY_HERE/${{ secrets.MARVEL_PRIVATE_KEY }}/' MarvelApp/Secrets.xcconfig
+      
+    - name: Cache SPM Dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/Library/Developer/Xcode/DerivedData
+          .build
+        key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+        restore-keys: |
+          ${{ runner.os }}-spm-
+      
+    - name: Resolve Dependencies
+      run: |
+        xcodebuild -resolvePackageDependencies \
+          -project MarvelApp.xcodeproj \
+          -scheme ${{ env.SCHEME }}
+      
+    - name: Build
+      run: |
+        xcodebuild build-for-testing \
+          -project MarvelApp.xcodeproj \
+          -scheme ${{ env.SCHEME }} \
+          -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=${{ env.IOS_VERSION }}' \
+          -derivedDataPath build
+      
+    - name: Run Tests
+      run: |
+        xcodebuild test-without-building \
+          -project MarvelApp.xcodeproj \
+          -scheme ${{ env.SCHEME }} \
+          -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=${{ env.IOS_VERSION }}' \
+          -derivedDataPath build \
+          -enableCodeCoverage YES
