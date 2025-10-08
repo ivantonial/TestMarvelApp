@@ -26,12 +26,8 @@ jobs:
         if [ -z "$LATEST_XCODE" ]; then
           LATEST_XCODE="Xcode.app"
         fi
-        echo "📱 Using: $LATEST_XCODE"
         sudo xcode-select -s /Applications/$LATEST_XCODE/Contents/Developer
         xcodebuild -version
-
-    - name: List Available Simulators
-      run: xcrun simctl list devices available
 
     - name: Setup Secrets
       run: |
@@ -42,18 +38,50 @@ jobs:
     - name: Cache SPM Dependencies
       uses: actions/cache@v4
       with:
-        path: |
-          ~/Library/Developer/Xcode/DerivedData
-          .build
+        path: ~/Library/Developer/Xcode/DerivedData
         key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
 
     - name: Build and Test
       run: |
-        # Usa nome do dispositivo ao invés de ID
+        echo "🔍 Detecting iOS version and device..."
+        
+        # Pega a última versão de iOS disponível
+        IOS_VERSION=$(xcrun simctl list runtimes | grep "iOS" | tail -1 | grep -oE "[0-9]+\.[0-9]+" | head -1)
+        
+        if [ -z "$IOS_VERSION" ]; then
+          echo "❌ Could not detect iOS version"
+          exit 1
+        fi
+        
+        echo "📱 Found iOS version: $IOS_VERSION"
+        
+        # Pega o primeiro iPhone disponível para essa versão
+        DEVICE_LINE=$(xcrun simctl list devices "iOS $IOS_VERSION" | grep "iPhone" | head -1)
+        
+        if [ -z "$DEVICE_LINE" ]; then
+          echo "❌ No iPhone found for iOS $IOS_VERSION"
+          exit 1
+        fi
+        
+        # Extrai o nome do dispositivo
+        DEVICE_NAME=$(echo "$DEVICE_LINE" | sed -E 's/^[[:space:]]*([^(]+).*/\1/' | xargs)
+        
+        # Extrai o UUID
+        DEVICE_ID=$(echo "$DEVICE_LINE" | grep -oE "\([A-F0-9-]{36}\)" | tr -d "()")
+        
+        echo "✅ Using: $DEVICE_NAME (iOS $IOS_VERSION)"
+        echo "   UUID: $DEVICE_ID"
+        
+        # Boot o simulador
+        echo "🚀 Booting simulator..."
+        xcrun simctl boot "$DEVICE_ID" || true
+        sleep 5
+        
+        echo "🏗️ Building and testing..."
         xcodebuild test \
           -project ${{ env.PROJECT_PATH }} \
           -scheme ${{ env.SCHEME }} \
-          -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+          -destination "platform=iOS Simulator,id=$DEVICE_ID" \
           -enableCodeCoverage YES \
           CODE_SIGN_IDENTITY="" \
           CODE_SIGNING_REQUIRED=NO
