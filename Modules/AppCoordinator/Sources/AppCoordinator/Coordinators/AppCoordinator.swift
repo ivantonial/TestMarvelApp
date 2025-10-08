@@ -118,3 +118,4 @@ public enum CharacterDestination: Hashable {
     case detail(Character)
     case comics(Character)
 }
+
