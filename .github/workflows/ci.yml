@@ -11,16 +11,12 @@ env:
   IOS_VERSION: '16.0'
   SCHEME: 'MarvelApp'
   PROJECT_PATH: 'MarvelApp.xcodeproj'   # Caminho centralizado do projeto
-  SECRETS_PATH: 'Config'                # Corrigido: caminho relativo dentro da pasta MarvelApp/
+  SECRETS_PATH: 'MarvelApp/Config'      # Caminho centralizado dos secrets
 
 jobs:
   build-and-test:
     name: Build and Test
     runs-on: macos-14
-
-    defaults:
-      run:
-        working-directory: MarvelApp   # Executa todos os comandos dentro da pasta MarvelApp/
 
     steps:
     # 1️⃣ Faz o checkout do código
