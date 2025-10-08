@@ -29,6 +29,11 @@ jobs:
         sudo xcode-select -s /Applications/$LATEST_XCODE/Contents/Developer
         xcodebuild -version
 
+    - name: List Available Runtimes
+      run: |
+        echo "📱 Available runtimes:"
+        xcrun simctl list runtimes
+
     - name: Setup Secrets
       run: |
         cp ${{ env.SECRETS_PATH }}/Secrets-model.xcconfig ${{ env.SECRETS_PATH }}/Secrets.xcconfig
@@ -41,38 +46,24 @@ jobs:
         path: ~/Library/Developer/Xcode/DerivedData
         key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
 
-    - name: Build and Test
+    - name: Build and Test  
       run: |
-        echo "🔍 Detecting iOS version and device..."
+        echo "🔍 Using iOS 26.0 (available runtime)..."
         
-        # Pega a última versão de iOS disponível
-        IOS_VERSION=$(xcrun simctl list runtimes | grep "iOS" | tail -1 | grep -oE "[0-9]+\.[0-9]+" | head -1)
-        
-        if [ -z "$IOS_VERSION" ]; then
-          echo "❌ Could not detect iOS version"
-          exit 1
-        fi
-        
-        echo "📱 Found iOS version: $IOS_VERSION"
-        
-        # Pega o primeiro iPhone disponível para essa versão
-        DEVICE_LINE=$(xcrun simctl list devices "iOS $IOS_VERSION" | grep "iPhone" | head -1)
+        # Usa iOS 26.0 que está disponível
+        DEVICE_LINE=$(xcrun simctl list devices "iOS 26.0" | grep "iPhone" | head -1)
         
         if [ -z "$DEVICE_LINE" ]; then
-          echo "❌ No iPhone found for iOS $IOS_VERSION"
+          echo "❌ No iPhone found for iOS 26.0"
           exit 1
         fi
         
-        # Extrai o nome do dispositivo
+        DEVICE_ID=$(echo "$DEVICE_LINE" | grep -oE "\([A-F0-9-]{36}\)" | tr -d "()")
         DEVICE_NAME=$(echo "$DEVICE_LINE" | sed -E 's/^[[:space:]]*([^(]+).*/\1/' | xargs)
         
-        # Extrai o UUID
-        DEVICE_ID=$(echo "$DEVICE_LINE" | grep -oE "\([A-F0-9-]{36}\)" | tr -d "()")
-        
-        echo "✅ Using: $DEVICE_NAME (iOS $IOS_VERSION)"
+        echo "✅ Using: $DEVICE_NAME (iOS 26.0)"
         echo "   UUID: $DEVICE_ID"
         
-        # Boot o simulador
         echo "🚀 Booting simulator..."
         xcrun simctl boot "$DEVICE_ID" || true
         sleep 5
@@ -84,4 +75,5 @@ jobs:
           -destination "platform=iOS Simulator,id=$DEVICE_ID" \
           -enableCodeCoverage YES \
           CODE_SIGN_IDENTITY="" \
-          CODE_SIGNING_REQUIRED=NO
+          CODE_SIGNING_REQUIRED=NO \
+          IPHONEOS_DEPLOYMENT_TARGET=16.0
