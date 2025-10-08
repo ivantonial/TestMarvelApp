@@ -10,8 +10,8 @@ env:
   XCODE_VERSION: '15.0'
   IOS_VERSION: '16.0'
   SCHEME: 'MarvelApp'
-  PROJECT_PATH: 'MarvelApp/MarvelApp.xcodeproj'   # ✅ Projeto dentro da pasta MarvelApp/
-  SECRETS_PATH: 'MarvelApp/Config'                # ✅ Secrets dentro de MarvelApp/Config
+  PROJECT_PATH: 'MarvelApp.xcodeproj'        # ✅ Projeto está na raiz do repo
+  SECRETS_PATH: 'MarvelApp/Config'           # ✅ Secrets dentro da pasta MarvelApp/Config
 
 jobs:
   build-and-test:
@@ -19,11 +19,11 @@ jobs:
     runs-on: macos-14
 
     steps:
-    # 1️⃣ Checkout do código
+    # 1️⃣ Faz o checkout do código
     - name: Checkout
       uses: actions/checkout@v3
 
-    # 2️⃣ Seleciona versão correta do Xcode
+    # 2️⃣ Seleciona a versão correta do Xcode
     - name: Select Xcode
       run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
 
@@ -52,7 +52,7 @@ jobs:
           -project ${{ env.PROJECT_PATH }} \
           -scheme ${{ env.SCHEME }}
 
-    # 6️⃣ Compila o projeto para testes
+    # 6️⃣ Compila o projeto para teste
     - name: Build
       run: |
         xcodebuild build-for-testing \
