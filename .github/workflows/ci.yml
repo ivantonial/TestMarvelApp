@@ -10,6 +10,8 @@ env:
   XCODE_VERSION: '15.0'
   IOS_VERSION: '16.0'
   SCHEME: 'MarvelApp'
+  PROJECT_PATH: 'MarvelApp.xcodeproj'   # 🔹 Caminho centralizado do projeto
+  SECRETS_PATH: 'MarvelApp/Config'      # 🔹 Caminho centralizado dos secrets
 
 jobs:
   build-and-test:
@@ -25,9 +27,9 @@ jobs:
       
     - name: Setup Secrets
       run: |
-        cp MarvelApp/Config/Secrets-model.xcconfig MarvelApp/Config/Secrets.xcconfig
-        sed -i '' 's/YOUR_PUBLIC_KEY_HERE/${{ secrets.MARVEL_PUBLIC_KEY }}/' MarvelApp/Config/Secrets.xcconfig
-        sed -i '' 's/YOUR_PRIVATE_KEY_HERE/${{ secrets.MARVEL_PRIVATE_KEY }}/' MarvelApp/Config/Secrets.xcconfig
+        cp ${{ env.SECRETS_PATH }}/Secrets-model.xcconfig ${{ env.SECRETS_PATH }}/Secrets.xcconfig
+        sed -i '' 's/YOUR_PUBLIC_KEY_HERE/${{ secrets.MARVEL_PUBLIC_KEY }}/' ${{ env.SECRETS_PATH }}/Secrets.xcconfig
+        sed -i '' 's/YOUR_PRIVATE_KEY_HERE/${{ secrets.MARVEL_PRIVATE_KEY }}/' ${{ env.SECRETS_PATH }}/Secrets.xcconfig
       
     - name: Cache SPM Dependencies
       uses: actions/cache@v3
@@ -42,13 +44,13 @@ jobs:
     - name: Resolve Dependencies
       run: |
         xcodebuild -resolvePackageDependencies \
-          -project MarvelApp/MarvelApp.xcodeproj \
+          -project ${{ env.PROJECT_PATH }} \
           -scheme ${{ env.SCHEME }}
       
     - name: Build
       run: |
         xcodebuild build-for-testing \
-          -project MarvelApp/MarvelApp.xcodeproj \
+          -project ${{ env.PROJECT_PATH }} \
           -scheme ${{ env.SCHEME }} \
           -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=${{ env.IOS_VERSION }}' \
           -derivedDataPath build
@@ -56,7 +58,7 @@ jobs:
     - name: Run Tests
       run: |
         xcodebuild test-without-building \
-          -project MarvelApp/MarvelApp.xcodeproj \
+          -project ${{ env.PROJECT_PATH }} \
           -scheme ${{ env.SCHEME }} \
           -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=${{ env.IOS_VERSION }}' \
           -derivedDataPath build \
