@@ -13,61 +13,65 @@ struct CharacterCardView: View {
     let model: CharacterCardModel
 
     var body: some View {
-        VStack(spacing: 0) {
-            // MARK: - Imagem
-            AsyncImage(url: model.imageURL) { phase in
-                switch phase {
-                case .empty:
-                    ZStack {
-                        Color.gray.opacity(0.15)
-                        ProgressView().tint(.red)
-                    }
-                    .frame(height: 180)
-                case .success(let image):
-                    image
-                        .resizable()
-                        .scaledToFill()
-                        .frame(maxWidth: .infinity, minHeight: 180, maxHeight: 180)
-                        .clipped()
-                case .failure:
-                    ZStack {
+        VStack(alignment: .leading, spacing: 0) {
+            // Character Image com tamanho fixo
+            GeometryReader { geometry in
+                AsyncImage(url: model.imageURL) { phase in
+                    switch phase {
+                    case .empty:
+                        ZStack {
+                            Color.gray.opacity(0.2)
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .red))
+                        }
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: geometry.size.width, height: geometry.size.width)
+                            .clipped()
+                    case .failure:
+                        ZStack {
+                            Color.gray.opacity(0.2)
+                            Image(systemName: "photo")
+                                .font(.system(size: 40))
+                                .foregroundColor(.gray)
+                        }
+                    @unknown default:
                         Color.gray.opacity(0.2)
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundColor(.red)
                     }
-                    .frame(height: 180)
-                @unknown default:
-                    EmptyView()
                 }
             }
+            .aspectRatio(1, contentMode: .fit)
 
-            // MARK: - Info
-            VStack(alignment: .leading, spacing: 6) {
+            // Character Info com altura fixa
+            VStack(alignment: .leading, spacing: 4) {
                 Text(model.name)
                     .font(.headline)
                     .foregroundColor(.white)
                     .lineLimit(2)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .minimumScaleFactor(0.8)
 
-                HStack(spacing: 4) {
+                HStack {
                     Image(systemName: "book.fill")
                         .font(.caption)
                         .foregroundColor(.red)
+
                     Text("\(model.comicsCount) comics")
                         .font(.caption)
                         .foregroundColor(.gray)
                 }
             }
             .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.black)
+            .frame(maxWidth: .infinity, minHeight: 70, alignment: .topLeading)
+            .background(Color.black.opacity(0.8))
         }
-        .background(Color.gray.opacity(0.15))
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(Color.gray.opacity(0.2))
+        .cornerRadius(12)
         .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Color.red.opacity(0.25), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.red.opacity(0.3), lineWidth: 1)
         )
-        .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .shadow(color: .red.opacity(0.2), radius: 5, x: 0, y: 2)
     }
 }

@@ -18,6 +18,15 @@
     <key>CFBundleVersion</key>
     <string>1</string>
 
+    <!-- Configuração de LaunchScreen -->
+    <key>UILaunchScreen</key>
+    <dict>
+        <key>UIColorName</key>
+        <string></string>
+        <key>UIImageName</key>
+        <string></string>
+    </dict>
+
     <!-- Permitir conexões HTTP para a API Marvel -->
     <key>NSAppTransportSecurity</key>
     <dict>
