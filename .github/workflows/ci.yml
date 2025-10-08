@@ -41,51 +41,24 @@ jobs:
         path: ~/Library/Developer/Xcode/DerivedData
         key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
 
-    - name: Create and Boot Simulator
+    - name: Build and Test
       run: |
-        echo "📱 Creating iPhone 15 Pro simulator with iOS 17.5..."
+        echo "🏗️ Building and testing with generic destination..."
         
-        # Usa iOS 17.5 que é compatível com Xcode 16.1
-        IOS_RUNTIME="com.apple.CoreSimulator.SimRuntime.iOS-17-5"
+        set -o pipefail
         
-        # Cria um novo simulador
-        DEVICE_UUID=$(xcrun simctl create "CI-iPhone-15-Pro" "iPhone 15 Pro" "$IOS_RUNTIME")
-        echo "Created device: $DEVICE_UUID"
-        
-        # Faz boot
-        xcrun simctl boot "$DEVICE_UUID"
-        echo "DEVICE_UUID=$DEVICE_UUID" >> $GITHUB_ENV
-        
-        # Aguarda o boot completar
-        sleep 15
-        
-        # Verifica status
-        echo "📱 Simulator status:"
-        xcrun simctl list devices | grep "$DEVICE_UUID"
-
-    - name: Build for Testing
-      run: |
-        echo "🏗️ Building for testing..."
-        
-        xcodebuild build-for-testing \
+        # USA O PLACEHOLDER GENÉRICO que o scheme aceita
+        xcodebuild test \
           -project ${{ env.PROJECT_PATH }} \
           -scheme ${{ env.SCHEME }} \
-          -destination "platform=iOS Simulator,id=${{ env.DEVICE_UUID }}" \
-          -derivedDataPath ./DerivedData \
-          CODE_SIGN_IDENTITY="" \
-          CODE_SIGNING_REQUIRED=NO
-
-    - name: Run Tests
-      run: |
-        echo "🧪 Running tests..."
-        
-        xcodebuild test-without-building \
-          -project ${{ env.PROJECT_PATH }} \
-          -scheme ${{ env.SCHEME }} \
-          -destination "platform=iOS Simulator,id=${{ env.DEVICE_UUID }}" \
-          -derivedDataPath ./DerivedData \
+          -destination 'platform=iOS Simulator,name=Any iOS Simulator Device' \
           -enableCodeCoverage YES \
-          -resultBundlePath ./TestResults.xcresult
+          -derivedDataPath ./DerivedData \
+          -resultBundlePath ./TestResults.xcresult \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          | tee xcodebuild.log \
+          | xcpretty
 
     - name: Upload Test Results
       if: always()
@@ -95,23 +68,16 @@ jobs:
         path: ./TestResults.xcresult
         retention-days: 30
 
-    - name: Upload Code Coverage
-      if: success()
-      uses: codecov/codecov-action@v4
+    - name: Upload Build Log
+      if: failure()
+      uses: actions/upload-artifact@v4
       with:
-        files: ./DerivedData/Build/ProfileData/*/Coverage.profdata
-        fail_ci_if_error: false
-        verbose: true
-
-    - name: Cleanup Simulator
-      if: always()
-      run: |
-        echo "🧹 Cleaning up..."
-        xcrun simctl shutdown "${{ env.DEVICE_UUID }}" || true
-        xcrun simctl delete "${{ env.DEVICE_UUID }}" || true
+        name: build-log
+        path: xcodebuild.log
+        retention-days: 7
 
     - name: Success Message
       if: success()
       run: |
         echo "✅ BUILD E TESTES PASSARAM COM SUCESSO!"
-        echo "📊 Resultados dos testes disponíveis nos artifacts"
+        echo "📊 Resultados disponíveis nos artifacts"
