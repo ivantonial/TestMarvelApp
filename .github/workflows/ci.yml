@@ -25,27 +25,37 @@ jobs:
         sudo xcode-select -s /Applications/Xcode_16.1.app
         xcodebuild -version
 
-    - name: List ALL Simulators (including unavailable)
+    - name: Fix Project Supported Platforms
       run: |
-        echo "📱 ALL simulators:"
-        xcrun simctl list devices
+        echo "🔧 Fixing supported platforms..."
+        
+        # Remove qualquer referência a platforms vazias ou inválidas
+        sed -i '' 's/SUPPORTED_PLATFORMS = "";/SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";/g' ${{ env.PROJECT_PATH }}/project.pbxproj
+        sed -i '' 's/SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;/SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;/g' ${{ env.PROJECT_PATH }}/project.pbxproj
+        
+        # Garante que iOS está nos platforms suportados
+        if ! grep -q 'SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"' ${{ env.PROJECT_PATH }}/project.pbxproj; then
+          echo "⚠️ Adding iOS platforms..."
+          sed -i '' 's/SUPPORTED_PLATFORMS = /SUPPORTED_PLATFORMS = "iphoneos iphonesimulator" \/\/ /g' ${{ env.PROJECT_PATH }}/project.pbxproj
+        fi
+        
+        echo "✅ Project platforms fixed!"
 
-    - name: Boot a specific iPhone simulator
+    - name: Boot iPhone Simulator
       run: |
         echo "🚀 Booting iPhone 15 Pro..."
-        # Usa o UUID que vimos anteriormente
         DEVICE_ID="8C6D49F8-4A1E-4F4E-835A-C8D55065B82B"
-        xcrun simctl boot "$DEVICE_ID" || echo "Failed to boot, may already be booted"
+        xcrun simctl boot "$DEVICE_ID" || echo "Already booted"
         sleep 10
         
         echo "📱 Simulator status:"
         xcrun simctl list devices | grep "$DEVICE_ID"
 
-    - name: Fix Swift Tools Version in All Modules
+    - name: Fix Swift Tools Version
       run: |
-        echo "🔧 Fixing Swift tools version 6.2 → 6.0 in all Package.swift files..."
+        echo "🔧 Fixing Swift tools version..."
         find . -name "Package.swift" -type f -exec sed -i '' -E 's/(swift-tools-version:[ ]*)6\.[2-9]/\16.0/g' {} \;
-        echo "✅ All Package.swift files patched for CI!"
+        echo "✅ Done!"
 
     - name: Setup Secrets
       run: |
@@ -63,7 +73,6 @@ jobs:
       run: |
         echo "🏗️ Building and testing..."
         
-        # Usa o UUID direto do iPhone 15 Pro (iOS 17.5)
         DEVICE_ID="8C6D49F8-4A1E-4F4E-835A-C8D55065B82B"
         
         xcodebuild test \
@@ -72,4 +81,5 @@ jobs:
           -destination "platform=iOS Simulator,id=$DEVICE_ID" \
           -enableCodeCoverage YES \
           CODE_SIGN_IDENTITY="" \
-          CODE_SIGNING_REQUIRED=NO
+          CODE_SIGNING_REQUIRED=NO \
+          SUPPORTED_PLATFORMS="iphoneos iphonesimulator"
