@@ -25,9 +25,9 @@ jobs:
       
     - name: Setup Secrets
       run: |
-        cp MarvelApp/Secrets-model.xcconfig MarvelApp/Secrets.xcconfig
-        sed -i '' 's/YOUR_PUBLIC_KEY_HERE/${{ secrets.MARVEL_PUBLIC_KEY }}/' MarvelApp/Secrets.xcconfig
-        sed -i '' 's/YOUR_PRIVATE_KEY_HERE/${{ secrets.MARVEL_PRIVATE_KEY }}/' MarvelApp/Secrets.xcconfig
+        cp MarvelApp/Config/Secrets-model.xcconfig MarvelApp/Config/Secrets.xcconfig
+        sed -i '' 's/YOUR_PUBLIC_KEY_HERE/${{ secrets.MARVEL_PUBLIC_KEY }}/' MarvelApp/Config/Secrets.xcconfig
+        sed -i '' 's/YOUR_PRIVATE_KEY_HERE/${{ secrets.MARVEL_PRIVATE_KEY }}/' MarvelApp/Config/Secrets.xcconfig
       
     - name: Cache SPM Dependencies
       uses: actions/cache@v3
