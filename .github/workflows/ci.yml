@@ -43,14 +43,10 @@ jobs:
 
     - name: Create and Boot Simulator
       run: |
-        echo "📱 Creating iPhone 15 Pro simulator..."
+        echo "📱 Creating iPhone 15 Pro simulator with iOS 17.5..."
         
-        # Lista runtimes disponíveis
-        xcrun simctl list runtimes
-        
-        # Pega o runtime iOS mais recente disponível
-        IOS_RUNTIME=$(xcrun simctl list runtimes | grep "iOS" | tail -1 | awk '{print $NF}')
-        echo "Using runtime: $IOS_RUNTIME"
+        # Usa iOS 17.5 que é compatível com Xcode 16.1
+        IOS_RUNTIME="com.apple.CoreSimulator.SimRuntime.iOS-17-5"
         
         # Cria um novo simulador
         DEVICE_UUID=$(xcrun simctl create "CI-iPhone-15-Pro" "iPhone 15 Pro" "$IOS_RUNTIME")
@@ -64,6 +60,7 @@ jobs:
         sleep 15
         
         # Verifica status
+        echo "📱 Simulator status:"
         xcrun simctl list devices | grep "$DEVICE_UUID"
 
     - name: Build for Testing
@@ -73,7 +70,6 @@ jobs:
         xcodebuild build-for-testing \
           -project ${{ env.PROJECT_PATH }} \
           -scheme ${{ env.SCHEME }} \
-          -sdk iphonesimulator \
           -destination "platform=iOS Simulator,id=${{ env.DEVICE_UUID }}" \
           -derivedDataPath ./DerivedData \
           CODE_SIGN_IDENTITY="" \
@@ -99,9 +95,23 @@ jobs:
         path: ./TestResults.xcresult
         retention-days: 30
 
+    - name: Upload Code Coverage
+      if: success()
+      uses: codecov/codecov-action@v4
+      with:
+        files: ./DerivedData/Build/ProfileData/*/Coverage.profdata
+        fail_ci_if_error: false
+        verbose: true
+
     - name: Cleanup Simulator
       if: always()
       run: |
         echo "🧹 Cleaning up..."
         xcrun simctl shutdown "${{ env.DEVICE_UUID }}" || true
         xcrun simctl delete "${{ env.DEVICE_UUID }}" || true
+
+    - name: Success Message
+      if: success()
+      run: |
+        echo "✅ BUILD E TESTES PASSARAM COM SUCESSO!"
+        echo "📊 Resultados dos testes disponíveis nos artifacts"
