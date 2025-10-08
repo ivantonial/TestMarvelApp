@@ -7,6 +7,7 @@ on:
     branches: [ main, dev ]
 
 env:
+  SCHEME: 'MarvelApp'
   PROJECT_PATH: 'MarvelApp.xcodeproj'
   SECRETS_PATH: 'MarvelApp/Config'
 
@@ -40,15 +41,15 @@ jobs:
         path: ~/Library/Developer/Xcode/DerivedData
         key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
 
-    - name: Build and Test with Test Plan
+    - name: Build and Test
       run: |
-        echo "🏗️ Building and testing using test plan directly..."
+        echo "🏗️ Building and testing..."
         
         set -o pipefail
         
-        # Usa o test plan diretamente sem scheme
         xcodebuild test \
           -project ${{ env.PROJECT_PATH }} \
+          -scheme ${{ env.SCHEME }} \
           -testPlan MarvelApp \
           -destination 'platform=iOS Simulator,name=iPhone 15 Pro' \
           -enableCodeCoverage YES \
