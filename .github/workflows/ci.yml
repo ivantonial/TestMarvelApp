@@ -25,11 +25,6 @@ jobs:
         sudo xcode-select -s /Applications/Xcode_16.1.app
         xcodebuild -version
 
-    - name: List Available Simulators
-      run: |
-        echo "📱 All available simulators:"
-        xcrun simctl list devices available
-
     - name: Fix Swift Tools Version in All Modules
       run: |
         echo "🔧 Fixing Swift tools version 6.2 → 6.0 in all Package.swift files..."
@@ -50,13 +45,12 @@ jobs:
 
     - name: Build and Test
       run: |
-        echo "🏗️ Building and testing..."
+        echo "🏗️ Building and testing on iPhone 15 Pro (iOS 17.5)..."
         
-        # Usa o simulador genérico - deixa o Xcode escolher
         xcodebuild test \
           -project ${{ env.PROJECT_PATH }} \
           -scheme ${{ env.SCHEME }} \
-          -destination 'platform=iOS Simulator,name=Any iOS Simulator Device' \
+          -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=17.5' \
           -enableCodeCoverage YES \
           CODE_SIGN_IDENTITY="" \
           CODE_SIGNING_REQUIRED=NO
