@@ -14,20 +14,14 @@ env:
 jobs:
   build-and-test:
     name: Build and Test
-    runs-on: macos-15         # ✅ macOS 15 tem versões mais recentes
+    runs-on: macos-15
 
     steps:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: List Available Xcode Versions
+    - name: Select Latest Xcode
       run: |
-        echo "📱 Available Xcode versions:"
-        ls /Applications/ | grep Xcode
-
-    - name: Select Latest Available Xcode
-      run: |
-        # Seleciona a versão mais recente disponível
         LATEST_XCODE=$(ls /Applications/ | grep "Xcode_" | sort -V | tail -1)
         if [ -z "$LATEST_XCODE" ]; then
           LATEST_XCODE="Xcode.app"
@@ -35,7 +29,9 @@ jobs:
         echo "📱 Using: $LATEST_XCODE"
         sudo xcode-select -s /Applications/$LATEST_XCODE/Contents/Developer
         xcodebuild -version
-        swift --version
+
+    - name: List Available Simulators
+      run: xcrun simctl list devices available
 
     - name: Setup Secrets
       run: |
@@ -50,31 +46,14 @@ jobs:
           ~/Library/Developer/Xcode/DerivedData
           .build
         key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
-        restore-keys: |
-          ${{ runner.os }}-spm-
-
-    - name: Clean Build Folder
-      run: |
-        rm -rf ~/Library/Developer/Xcode/DerivedData
-        rm -rf .build
 
     - name: Build and Test
       run: |
-        # Detecta automaticamente um simulador disponível
-        SIMULATORS=$(xcrun simctl list devices available iPhone | grep -v "unavailable" | grep "iPhone" | head -1)
-        DEVICE_NAME=$(echo "$SIMULATORS" | sed 's/.*(\(.*\)).*/\1/' | xargs)
-        
-        if [ -z "$DEVICE_NAME" ]; then
-          echo "❌ No iPhone simulator found"
-          exit 1
-        fi
-        
-        echo "📱 Using simulator: $DEVICE_NAME"
-        
+        # Usa nome do dispositivo ao invés de ID
         xcodebuild test \
           -project ${{ env.PROJECT_PATH }} \
           -scheme ${{ env.SCHEME }} \
-          -destination "platform=iOS Simulator,id=$DEVICE_NAME" \
+          -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
           -enableCodeCoverage YES \
           CODE_SIGN_IDENTITY="" \
           CODE_SIGNING_REQUIRED=NO
