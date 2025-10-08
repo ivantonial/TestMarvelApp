@@ -10,8 +10,8 @@ env:
   XCODE_VERSION: '15.0'
   IOS_VERSION: '16.0'
   SCHEME: 'MarvelApp'
-  PROJECT_PATH: 'MarvelApp.xcodeproj'        # ✅ Projeto está na raiz do repo
-  SECRETS_PATH: 'MarvelApp/Config'           # ✅ Secrets dentro da pasta MarvelApp/Config
+  PROJECT_PATH: 'MarvelApp.xcodeproj'
+  SECRETS_PATH: 'MarvelApp/Config'
 
 jobs:
   build-and-test:
@@ -27,14 +27,33 @@ jobs:
     - name: Select Xcode
       run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
 
-    # 3️⃣ Copia e injeta as secrets da API Marvel
+    # 3️⃣ Valida integridade do projeto
+    - name: Validate Project File
+      run: |
+        echo "🔍 Validating project.pbxproj integrity..."
+        if ! plutil -lint ${{ env.PROJECT_PATH }}/project.pbxproj; then
+          echo "❌ project.pbxproj is corrupted or invalid"
+          exit 1
+        fi
+        
+        echo "🔍 Checking for merge conflicts..."
+        if grep -rq "<<<<<<" ${{ env.PROJECT_PATH }}/ || \
+           grep -rq ">>>>>>" ${{ env.PROJECT_PATH }}/ || \
+           grep -rq "======" ${{ env.PROJECT_PATH }}/; then
+          echo "❌ Merge conflict markers found in project files"
+          exit 1
+        fi
+        
+        echo "✅ Project file is valid"
+
+    # 4️⃣ Copia e injeta as secrets da API Marvel
     - name: Setup Secrets
       run: |
         cp ${{ env.SECRETS_PATH }}/Secrets-model.xcconfig ${{ env.SECRETS_PATH }}/Secrets.xcconfig
         sed -i '' 's/YOUR_PUBLIC_KEY_HERE/${{ secrets.MARVEL_PUBLIC_KEY }}/' ${{ env.SECRETS_PATH }}/Secrets.xcconfig
         sed -i '' 's/YOUR_PRIVATE_KEY_HERE/${{ secrets.MARVEL_PRIVATE_KEY }}/' ${{ env.SECRETS_PATH }}/Secrets.xcconfig
 
-    # 4️⃣ Cache das dependências Swift Package Manager
+    # 5️⃣ Cache das dependências Swift Package Manager
     - name: Cache SPM Dependencies
       uses: actions/cache@v3
       with:
@@ -45,14 +64,14 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-spm-
 
-    # 5️⃣ Resolve dependências do projeto
+    # 6️⃣ Resolve dependências do projeto
     - name: Resolve Dependencies
       run: |
         xcodebuild -resolvePackageDependencies \
           -project ${{ env.PROJECT_PATH }} \
           -scheme ${{ env.SCHEME }}
 
-    # 6️⃣ Compila o projeto para teste
+    # 7️⃣ Compila o projeto para teste
     - name: Build
       run: |
         xcodebuild build-for-testing \
@@ -61,7 +80,7 @@ jobs:
           -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=${{ env.IOS_VERSION }}' \
           -derivedDataPath build
 
-    # 7️⃣ Executa os testes automatizados
+    # 8️⃣ Executa os testes automatizados
     - name: Run Tests
       run: |
         xcodebuild test-without-building \
