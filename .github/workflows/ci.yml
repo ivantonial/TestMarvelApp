@@ -12,8 +12,8 @@ env:
   SECRETS_PATH: 'MarvelApp/Config'
 
 jobs:
-  build:
-    name: Build
+  build-and-test:
+    name: Build and Test
     runs-on: macos-14
 
     steps:
@@ -41,20 +41,67 @@ jobs:
         path: ~/Library/Developer/Xcode/DerivedData
         key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
 
-    - name: Build
+    - name: Create and Boot Simulator
       run: |
-        echo "🏗️ Building project..."
+        echo "📱 Creating iPhone 15 Pro simulator..."
         
-        xcodebuild build \
+        # Lista runtimes disponíveis
+        xcrun simctl list runtimes
+        
+        # Pega o runtime iOS mais recente disponível
+        IOS_RUNTIME=$(xcrun simctl list runtimes | grep "iOS" | tail -1 | awk '{print $NF}')
+        echo "Using runtime: $IOS_RUNTIME"
+        
+        # Cria um novo simulador
+        DEVICE_UUID=$(xcrun simctl create "CI-iPhone-15-Pro" "iPhone 15 Pro" "$IOS_RUNTIME")
+        echo "Created device: $DEVICE_UUID"
+        
+        # Faz boot
+        xcrun simctl boot "$DEVICE_UUID"
+        echo "DEVICE_UUID=$DEVICE_UUID" >> $GITHUB_ENV
+        
+        # Aguarda o boot completar
+        sleep 15
+        
+        # Verifica status
+        xcrun simctl list devices | grep "$DEVICE_UUID"
+
+    - name: Build for Testing
+      run: |
+        echo "🏗️ Building for testing..."
+        
+        xcodebuild build-for-testing \
           -project ${{ env.PROJECT_PATH }} \
           -scheme ${{ env.SCHEME }} \
           -sdk iphonesimulator \
-          -destination 'generic/platform=iOS Simulator' \
+          -destination "platform=iOS Simulator,id=${{ env.DEVICE_UUID }}" \
+          -derivedDataPath ./DerivedData \
           CODE_SIGN_IDENTITY="" \
-          CODE_SIGNING_REQUIRED=NO | xcpretty
+          CODE_SIGNING_REQUIRED=NO
 
-    - name: Success
-      if: success()
+    - name: Run Tests
       run: |
-        echo "✅ BUILD PASSOU! O código compila corretamente!"
-        echo "⚠️ Testes desabilitados temporariamente devido a problema com simuladores no CI"
+        echo "🧪 Running tests..."
+        
+        xcodebuild test-without-building \
+          -project ${{ env.PROJECT_PATH }} \
+          -scheme ${{ env.SCHEME }} \
+          -destination "platform=iOS Simulator,id=${{ env.DEVICE_UUID }}" \
+          -derivedDataPath ./DerivedData \
+          -enableCodeCoverage YES \
+          -resultBundlePath ./TestResults.xcresult
+
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: ./TestResults.xcresult
+        retention-days: 30
+
+    - name: Cleanup Simulator
+      if: always()
+      run: |
+        echo "🧹 Cleaning up..."
+        xcrun simctl shutdown "${{ env.DEVICE_UUID }}" || true
+        xcrun simctl delete "${{ env.DEVICE_UUID }}" || true
