@@ -25,18 +25,16 @@ jobs:
         sudo xcode-select -s /Applications/Xcode_16.1.app
         xcodebuild -version
 
+    - name: List Available Simulators
+      run: |
+        echo "📱 All available simulators:"
+        xcrun simctl list devices available
+
     - name: Fix Swift Tools Version in All Modules
       run: |
         echo "🔧 Fixing Swift tools version 6.2 → 6.0 in all Package.swift files..."
-        
-        # Corrige TODOS os Package.swift automaticamente
         find . -name "Package.swift" -type f -exec sed -i '' -E 's/(swift-tools-version:[ ]*)6\.[2-9]/\16.0/g' {} \;
-        
         echo "✅ All Package.swift files patched for CI!"
-        
-        # Mostra o que foi corrigido (opcional, para debug)
-        echo "📝 Swift tools versions now:"
-        find . -name "Package.swift" -type f -exec grep -H "swift-tools-version" {} \;
 
     - name: Setup Secrets
       run: |
@@ -52,10 +50,13 @@ jobs:
 
     - name: Build and Test
       run: |
+        echo "🏗️ Building and testing..."
+        
+        # Usa o simulador genérico - deixa o Xcode escolher
         xcodebuild test \
           -project ${{ env.PROJECT_PATH }} \
           -scheme ${{ env.SCHEME }} \
-          -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=17.5' \
+          -destination 'platform=iOS Simulator,name=Any iOS Simulator Device' \
           -enableCodeCoverage YES \
           CODE_SIGN_IDENTITY="" \
           CODE_SIGNING_REQUIRED=NO
