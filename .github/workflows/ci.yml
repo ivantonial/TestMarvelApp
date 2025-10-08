@@ -20,6 +20,26 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
+    - name: Debug Scheme Configuration
+      run: |
+        echo "🔍 Looking for scheme files..."
+        find ${{ env.PROJECT_PATH }} -name "*.xcscheme" -exec echo "Found: {}" \;
+        
+        SCHEME_FILE="${{ env.PROJECT_PATH }}/xcshareddata/xcschemes/${{ env.SCHEME }}.xcscheme"
+        
+        if [ -f "$SCHEME_FILE" ]; then
+          echo ""
+          echo "📄 Scheme file content:"
+          cat "$SCHEME_FILE"
+          
+          echo ""
+          echo "🔍 Checking for SDK references:"
+          grep -i "sdk" "$SCHEME_FILE" || echo "No SDK references found"
+          grep -i "26\." "$SCHEME_FILE" || echo "No 26.x references found"
+        else
+          echo "⚠️ Scheme file not found at expected location"
+        fi
+
     - name: Select Latest Xcode
       run: |
         LATEST_XCODE=$(ls /Applications/ | grep "Xcode_" | sort -V | tail -1)
@@ -28,10 +48,6 @@ jobs:
         fi
         sudo xcode-select -s /Applications/$LATEST_XCODE/Contents/Developer
         xcodebuild -version
-        
-        echo ""
-        echo "📱 Available SDKs:"
-        xcodebuild -showsdks
 
     - name: Setup Secrets
       run: |
@@ -47,43 +63,20 @@ jobs:
 
     - name: Build and Test
       run: |
-        echo "🔍 Finding iOS 18.x simulator..."
+        DEVICE_ID=$(xcrun simctl list devices "iOS 18.6" | grep "iPhone" | grep -oE "\([A-F0-9-]{36}\)" | head -1 | tr -d "()")
         
-        # Procura por iPhone no iOS 18.x
-        DEVICE_LINE=$(xcrun simctl list devices "iOS 18.6" 2>/dev/null | grep "iPhone" | head -1)
-        
-        if [ -z "$DEVICE_LINE" ]; then
-          DEVICE_LINE=$(xcrun simctl list devices "iOS 18.5" 2>/dev/null | grep "iPhone" | head -1)
-        fi
-        
-        if [ -z "$DEVICE_LINE" ]; then
-          DEVICE_LINE=$(xcrun simctl list devices "iOS 18.4" 2>/dev/null | grep "iPhone" | head -1)
-        fi
-        
-        if [ -z "$DEVICE_LINE" ]; then
-          echo "❌ No iOS 18.x iPhone simulator found!"
+        if [ -z "$DEVICE_ID" ]; then
+          echo "❌ No iOS 18.6 iPhone found!"
           exit 1
         fi
         
-        DEVICE_ID=$(echo "$DEVICE_LINE" | grep -oE "\([A-F0-9-]{36}\)" | tr -d "()")
-        DEVICE_NAME=$(echo "$DEVICE_LINE" | sed -E 's/^[[:space:]]*([^(]+).*/\1/' | xargs)
-        
-        echo "✅ Found: $DEVICE_NAME"
-        echo "   UUID: $DEVICE_ID"
-        
-        xcrun simctl boot "$DEVICE_ID" 2>/dev/null || true
+        xcrun simctl boot "$DEVICE_ID" || true
         sleep 5
         
-        echo "🏗️ Building and testing with generic iOS Simulator platform..."
-        
-        # USA APENAS O DEVICE ID, SEM ESPECIFICAR SDK
-        # Isso força o Xcode a usar o SDK compatível com o runtime do simulador
         xcodebuild test \
           -project ${{ env.PROJECT_PATH }} \
           -scheme ${{ env.SCHEME }} \
           -destination "platform=iOS Simulator,id=$DEVICE_ID" \
           -enableCodeCoverage YES \
           CODE_SIGN_IDENTITY="" \
-          CODE_SIGNING_REQUIRED=NO \
-          IPHONEOS_DEPLOYMENT_TARGET=16.0 \
-          ONLY_ACTIVE_ARCH=YES
+          CODE_SIGNING_REQUIRED=NO
