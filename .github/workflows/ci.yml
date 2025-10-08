@@ -25,37 +25,19 @@ jobs:
         sudo xcode-select -s /Applications/Xcode_16.1.app
         xcodebuild -version
 
-    - name: Fix Project Supported Platforms
-      run: |
-        echo "🔧 Fixing supported platforms..."
-        
-        # Remove qualquer referência a platforms vazias ou inválidas
-        sed -i '' 's/SUPPORTED_PLATFORMS = "";/SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";/g' ${{ env.PROJECT_PATH }}/project.pbxproj
-        sed -i '' 's/SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;/SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;/g' ${{ env.PROJECT_PATH }}/project.pbxproj
-        
-        # Garante que iOS está nos platforms suportados
-        if ! grep -q 'SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"' ${{ env.PROJECT_PATH }}/project.pbxproj; then
-          echo "⚠️ Adding iOS platforms..."
-          sed -i '' 's/SUPPORTED_PLATFORMS = /SUPPORTED_PLATFORMS = "iphoneos iphonesimulator" \/\/ /g' ${{ env.PROJECT_PATH }}/project.pbxproj
-        fi
-        
-        echo "✅ Project platforms fixed!"
+    - name: Setup Ruby and Fastlane
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.2'
+        bundler-cache: true
 
-    - name: Boot iPhone Simulator
+    - name: Install Fastlane
       run: |
-        echo "🚀 Booting iPhone 15 Pro..."
-        DEVICE_ID="8C6D49F8-4A1E-4F4E-835A-C8D55065B82B"
-        xcrun simctl boot "$DEVICE_ID" || echo "Already booted"
-        sleep 10
-        
-        echo "📱 Simulator status:"
-        xcrun simctl list devices | grep "$DEVICE_ID"
+        gem install fastlane
 
     - name: Fix Swift Tools Version
       run: |
-        echo "🔧 Fixing Swift tools version..."
         find . -name "Package.swift" -type f -exec sed -i '' -E 's/(swift-tools-version:[ ]*)6\.[2-9]/\16.0/g' {} \;
-        echo "✅ Done!"
 
     - name: Setup Secrets
       run: |
@@ -63,23 +45,11 @@ jobs:
         sed -i '' 's/YOUR_PUBLIC_KEY_HERE/${{ secrets.MARVEL_PUBLIC_KEY }}/' ${{ env.SECRETS_PATH }}/Secrets.xcconfig
         sed -i '' 's/YOUR_PRIVATE_KEY_HERE/${{ secrets.MARVEL_PRIVATE_KEY }}/' ${{ env.SECRETS_PATH }}/Secrets.xcconfig
 
-    - name: Cache SPM Dependencies
-      uses: actions/cache@v4
-      with:
-        path: ~/Library/Developer/Xcode/DerivedData
-        key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
-
-    - name: Build and Test
+    - name: Run Tests with Fastlane
       run: |
-        echo "🏗️ Building and testing..."
-        
-        DEVICE_ID="8C6D49F8-4A1E-4F4E-835A-C8D55065B82B"
-        
-        xcodebuild test \
-          -project ${{ env.PROJECT_PATH }} \
-          -scheme ${{ env.SCHEME }} \
-          -destination "platform=iOS Simulator,id=$DEVICE_ID" \
-          -enableCodeCoverage YES \
-          CODE_SIGN_IDENTITY="" \
-          CODE_SIGNING_REQUIRED=NO \
-          SUPPORTED_PLATFORMS="iphoneos iphonesimulator"
+        fastlane scan \
+          --project "${{ env.PROJECT_PATH }}" \
+          --scheme "${{ env.SCHEME }}" \
+          --device "iPhone 15 Pro" \
+          --code_coverage \
+          --skip_slack
