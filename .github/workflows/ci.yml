@@ -1,760 +1,413 @@
-name: CI/CD Complete Pipeline
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, dev, release/* ]
+    branches:
+      - main
+      - develop
+      - 'feature/**'
+      - 'release/**'
   pull_request:
-    branches: [ main, dev ]
-    types: [ opened, synchronize, reopened ]
+    branches:
+      - main
+      - develop
   workflow_dispatch:
-    inputs:
-      skip_tests:
-        description: 'Skip tests execution'
-        required: false
-        default: false
-        type: boolean
-
-# Cancela execuções anteriores do mesmo PR
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
 
 env:
+  XCODE_VERSION: '15.0'
+  IOS_DESTINATION: 'platform=iOS Simulator,name=iPhone 15 Pro,OS=17.0'
   SCHEME: 'MarvelApp'
-  PROJECT_PATH: 'MarvelApp.xcodeproj'
-  SECRETS_PATH: 'MarvelApp/Config'
-  DERIVED_DATA_PATH: './DerivedData'
-  XCODE_VERSION: '16.1'
-  SWIFT_VERSION: '6.0'
-  MIN_IOS_VERSION: '15.0'
-  CODECOV_MIN_COVERAGE: '70'
+  PROJECT: 'MarvelApp.xcodeproj'
+  DERIVED_DATA_PATH: 'DerivedData'
 
 jobs:
-  # ============================================================================
-  # JOB: Validação Inicial
-  # ============================================================================
-  validate:
-    name: 🔍 Validate Project Structure
-    runs-on: macos-14
-    timeout-minutes: 10
-    
-    steps:
-    - name: 📥 Checkout
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0  # Para análise completa do git
-    
-    - name: 🔧 Select Xcode ${{ env.XCODE_VERSION }}
-      run: |
-        sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
-        xcodebuild -version
-        swift --version
-    
-    - name: 📦 Validate SPM Packages
-      run: |
-        echo "📦 Validando estrutura dos pacotes SPM..."
-        
-        # Verificar Package.swift principal
-        if [ -f "Package.swift" ]; then
-          echo "✅ Package.swift encontrado no root"
-          swift package describe
-        fi
-        
-        # Verificar módulos
-        echo "📦 Procurando por módulos SPM..."
-        find . -name "Package.swift" -type f | while read package; do
-          dir=$(dirname "$package")
-          echo "📦 Validando módulo: $dir"
-          cd "$dir"
-          swift package dump-package | head -20
-          cd - > /dev/null
-        done
-    
-    - name: 🔍 Check Dependencies
-      run: |
-        echo "🔍 Resolvendo dependências..."
-        if [ -f "Package.swift" ]; then
-          swift package resolve
-          swift package show-dependencies
-        else
-          xcodebuild -resolvePackageDependencies \
-            -project ${{ env.PROJECT_PATH }} \
-            -scheme ${{ env.SCHEME }} \
-            -clonedSourcePackagesDirPath SourcePackages
-        fi
-    
-    - name: 📋 Project Info
-      run: |
-        echo "📋 Informações do Projeto:"
-        echo "========================="
-        xcodebuild -list -project ${{ env.PROJECT_PATH }}
-        
-        echo -e "\n📱 Simuladores Disponíveis:"
-        xcrun simctl list devices available
-
-  # ============================================================================
-  # JOB: Análise de Código Estático
-  # ============================================================================
+  # Job 1: Lint e Análise de Código
   lint:
-    name: 🎨 Lint & Code Quality
+    name: SwiftLint
     runs-on: macos-14
-    needs: validate
-    timeout-minutes: 15
-    
     steps:
-    - name: 📥 Checkout
-      uses: actions/checkout@v4
-    
-    - name: 🔧 Setup Environment
-      run: |
-        sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
-        brew install swiftlint swiftformat periphery
-    
-    - name: 📝 Create SwiftLint Config
-      run: |
-        cat > .swiftlint.yml << 'EOF'
-        included:
-          - MarvelApp
-          - MarvelAppTests
-          - MarvelAppUITests
+      - name: Checkout
+        uses: actions/checkout@v4
         
-        excluded:
-          - Carthage
-          - Pods
-          - .build
-          - SourcePackages
-          - DerivedData
-          - ${DERIVED_DATA_PATH}
+      - name: Install SwiftLint
+        run: brew install swiftlint
         
-        disabled_rules:
-          - trailing_whitespace
-          - line_length
+      - name: Run SwiftLint
+        run: |
+          swiftlint --config .swiftlint.yml --reporter json > swiftlint-report.json || true
+          swiftlint --config .swiftlint.yml
+        continue-on-error: true
         
-        opt_in_rules:
-          - empty_count
-          - closure_spacing
-          - collection_alignment
-          - contains_over_first_not_nil
-          - discouraged_optional_boolean
-          - empty_string
-          - first_where
-          - force_unwrapping
-          - implicit_return
-          - last_where
-          - legacy_random
-          - literal_expression_end_indentation
-          - multiline_arguments
-          - multiline_function_chains
-          - multiline_literal_brackets
-          - multiline_parameters
-          - multiline_parameters_brackets
-          - operator_usage_whitespace
-          - prefer_self_type_over_type_of_self
-          - redundant_nil_coalescing
-          - redundant_type_annotation
-          - strict_fileprivate
-          - toggle_bool
-          - trailing_closure
-          - unneeded_parentheses_in_closure_argument
-          - vertical_whitespace_closing_braces
-          - vertical_whitespace_opening_braces
-          - yoda_condition
-        
-        force_cast: warning
-        force_try: warning
-        
-        function_body_length:
-          warning: 50
-          error: 100
-        
-        type_body_length:
-          warning: 300
-          error: 500
-        
-        file_length:
-          warning: 500
-          error: 1000
-        
-        cyclomatic_complexity:
-          warning: 10
-          error: 20
-        
-        type_name:
-          min_length: 3
-          max_length: 50
-        
-        identifier_name:
-          min_length: 2
-          max_length: 50
-        EOF
-    
-    - name: 🎨 SwiftLint
-      run: |
-        echo "🎨 Executando SwiftLint..."
-        swiftlint lint --reporter github-actions-logging || true
-        
-        # Gerar relatório HTML
-        swiftlint lint --reporter html > swiftlint-report.html || true
-    
-    - name: 📐 SwiftFormat Check
-      run: |
-        echo "📐 Verificando formatação do código..."
-        swiftformat --lint . --exclude SourcePackages,DerivedData,.build || true
-    
-    - name: 🔍 Periphery (Dead Code Detection)
-      continue-on-error: true
-      run: |
-        echo "🔍 Procurando código não utilizado..."
-        periphery scan \
-          --project ${{ env.PROJECT_PATH }} \
-          --schemes ${{ env.SCHEME }} \
-          --targets MarvelApp \
-          --format github-actions || true
-    
-    - name: 📤 Upload Lint Reports
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: lint-reports
-        path: |
-          swiftlint-report.html
-        retention-days: 7
+      - name: Upload SwiftLint Report
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: swiftlint-report
+          path: swiftlint-report.json
 
-  # ============================================================================
-  # JOB: Build e Testes (Matrix)
-  # ============================================================================
+  # Job 2: Build e Testes Unitários
   build-and-test:
-    name: 🏗️ Build & Test (iOS ${{ matrix.ios-version }})
+    name: Build and Test
     runs-on: macos-14
     needs: lint
-    timeout-minutes: 45
-    
     strategy:
-      fail-fast: false
       matrix:
-        ios-version: ['17.5', '18.0']
-        include:
-          - ios-version: '17.5'
-            simulator-name: 'iPhone 15 Pro'
-          - ios-version: '18.0'
-            simulator-name: 'iPhone 16 Pro'
+        configuration: [Debug, Release]
     
     steps:
-    - name: 📥 Checkout
-      uses: actions/checkout@v4
-    
-    - name: 🔧 Select Xcode
-      run: |
-        sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
-        xcodebuild -version
-    
-    - name: 🔐 Setup Secrets
-      run: |
-        cp ${{ env.SECRETS_PATH }}/Secrets-model.xcconfig ${{ env.SECRETS_PATH }}/Secrets.xcconfig
-        sed -i '' 's/YOUR_PUBLIC_KEY_HERE/${{ secrets.MARVEL_PUBLIC_KEY }}/' ${{ env.SECRETS_PATH }}/Secrets.xcconfig
-        sed -i '' 's/YOUR_PRIVATE_KEY_HERE/${{ secrets.MARVEL_PRIVATE_KEY }}/' ${{ env.SECRETS_PATH }}/Secrets.xcconfig
-    
-    - name: 💾 Cache - SPM
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/Library/Developer/Xcode/DerivedData
-          .build
-          SourcePackages
-        key: ${{ runner.os }}-spm-${{ matrix.ios-version }}-${{ hashFiles('**/Package.resolved', '**/*.xcodeproj/project.pbxproj') }}
-        restore-keys: |
-          ${{ runner.os }}-spm-${{ matrix.ios-version }}-
-          ${{ runner.os }}-spm-
-    
-    - name: 💾 Cache - Swift Build
-      uses: actions/cache@v4
-      with:
-        path: |
-          .build
-          **/.build
-        key: ${{ runner.os }}-swift-build-${{ hashFiles('**/Package.swift') }}
-    
-    - name: 📱 Setup Simulator
-      id: simulator
-      run: |
-        echo "📱 Configurando simulador iOS ${{ matrix.ios-version }}..."
-        
-        # Listar dispositivos disponíveis
-        xcrun simctl list devices available
-        
-        # Tentar deletar simulador existente
-        xcrun simctl delete "${{ matrix.simulator-name }}" 2>/dev/null || true
-        
-        # Buscar runtime e device type corretos
-        RUNTIME=$(xcrun simctl list runtimes | grep "iOS ${{ matrix.ios-version }}" | tail -n 1 | awk '{print $NF}')
-        
-        if [ -z "$RUNTIME" ]; then
-          echo "⚠️ Runtime iOS ${{ matrix.ios-version }} não encontrado, usando mais recente..."
-          RUNTIME=$(xcrun simctl list runtimes | grep iOS | tail -n 1 | awk '{print $NF}')
-        fi
-        
-        # Determinar device type
-        DEVICE_TYPE="com.apple.CoreSimulator.SimDeviceType.iPhone-15-Pro"
-        if [ "${{ matrix.ios-version }}" == "18.0" ]; then
-          DEVICE_TYPE="com.apple.CoreSimulator.SimDeviceType.iPhone-16-Pro"
-        fi
-        
-        # Criar simulador
-        DEVICE_ID=$(xcrun simctl create "${{ matrix.simulator-name }}" "$DEVICE_TYPE" "$RUNTIME" 2>/dev/null || \
-                    xcrun simctl create "${{ matrix.simulator-name }}" "iPhone 15 Pro" "$RUNTIME")
-        
-        echo "📱 Simulador criado: $DEVICE_ID"
-        echo "device_id=$DEVICE_ID" >> $GITHUB_OUTPUT
-        
-        # Boot simulador
-        xcrun simctl boot "$DEVICE_ID" || true
-        
-        # Aguardar boot completo
-        xcrun simctl bootstatus "$DEVICE_ID" -b || true
-        
-        # Configurações adicionais
-        xcrun simctl ui "$DEVICE_ID" appearance dark || true
-    
-    - name: 📦 Resolve Dependencies
-      run: |
-        echo "📦 Resolvendo dependências SPM..."
-        xcodebuild -resolvePackageDependencies \
-          -project ${{ env.PROJECT_PATH }} \
-          -scheme ${{ env.SCHEME }} \
-          -derivedDataPath ${{ env.DERIVED_DATA_PATH }}
-    
-    - name: 🏗️ Build for Testing
-      run: |
-        echo "🏗️ Compilando para testes..."
-        
-        set -o pipefail
-        
-        xcodebuild build-for-testing \
-          -project ${{ env.PROJECT_PATH }} \
-          -scheme ${{ env.SCHEME }} \
-          -destination "platform=iOS Simulator,id=${{ steps.simulator.outputs.device_id }}" \
-          -derivedDataPath ${{ env.DERIVED_DATA_PATH }} \
-          -enableCodeCoverage YES \
-          CODE_SIGN_IDENTITY="" \
-          CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO \
-          COMPILER_INDEX_STORE_ENABLE=NO \
-          | tee build.log \
-          | xcbeautify
-    
-    - name: 🧪 Run Tests
-      if: ${{ github.event.inputs.skip_tests != 'true' }}
-      run: |
-        echo "🧪 Executando testes..."
-        
-        set -o pipefail
-        
-        xcodebuild test-without-building \
-          -project ${{ env.PROJECT_PATH }} \
-          -scheme ${{ env.SCHEME }} \
-          -testPlan MarvelApp \
-          -destination "platform=iOS Simulator,id=${{ steps.simulator.outputs.device_id }}" \
-          -derivedDataPath ${{ env.DERIVED_DATA_PATH }} \
-          -resultBundlePath ./TestResults-iOS${{ matrix.ios-version }}.xcresult \
-          -enableCodeCoverage YES \
-          -parallel-testing-enabled YES \
-          -maximum-concurrent-test-simulator-destinations 2 \
-          -test-iterations 1 \
-          -retry-tests-on-failure \
-          -test-repetition-mode "retry_on_failure" \
-          | tee test.log \
-          | xcbeautify \
-          && echo "✅ Testes passaram!" \
-          || echo "❌ Alguns testes falharam"
-    
-    - name: 📊 Process Test Results
-      if: always()
-      run: |
-        echo "📊 Processando resultados dos testes..."
-        
-        if [ -d "./TestResults-iOS${{ matrix.ios-version }}.xcresult" ]; then
-          # Extrair sumário dos testes
-          xcrun xcresulttool get \
-            --path ./TestResults-iOS${{ matrix.ios-version }}.xcresult \
-            --format json > test-results.json
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ env.XCODE_VERSION }}
+      
+      - name: Cache SPM packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
+            ~/Library/Caches/org.swift.swiftpm
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+      
+      - name: Cache DerivedData
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.DERIVED_DATA_PATH }}
+          key: ${{ runner.os }}-deriveddata-${{ hashFiles('**/*.swift') }}
+          restore-keys: |
+            ${{ runner.os }}-deriveddata-
+      
+      - name: Setup Ruby for Fastlane (optional)
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+        continue-on-error: true
+      
+      - name: Install Dependencies
+        run: |
+          # Se usar CocoaPods (adicionar se necessário)
+          # pod install
+          
+          # Resolve Swift Package Manager dependencies
+          xcodebuild -resolvePackageDependencies \
+            -project "${{ env.PROJECT }}" \
+            -scheme "${{ env.SCHEME }}" \
+            -derivedDataPath "${{ env.DERIVED_DATA_PATH }}"
+      
+      - name: Setup Marvel API Keys
+        run: |
+          # Criar arquivo xcconfig com as chaves da API
+          echo "MARVEL_PUBLIC_KEY = ${{ secrets.MARVEL_PUBLIC_KEY }}" > Config.xcconfig
+          echo "MARVEL_PRIVATE_KEY = ${{ secrets.MARVEL_PRIVATE_KEY }}" >> Config.xcconfig
+          
+          # Alternativa: Configurar diretamente no Info.plist via PlistBuddy
+          /usr/libexec/PlistBuddy -c "Set :MARVEL_PUBLIC_KEY ${{ secrets.MARVEL_PUBLIC_KEY }}" MarvelApp/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :MARVEL_PRIVATE_KEY ${{ secrets.MARVEL_PRIVATE_KEY }}" MarvelApp/Info.plist
+      
+      - name: Build for Testing
+        run: |
+          set -o pipefail
+          xcodebuild build-for-testing \
+            -project "${{ env.PROJECT }}" \
+            -scheme "${{ env.SCHEME }}" \
+            -configuration ${{ matrix.configuration }} \
+            -destination "${{ env.IOS_DESTINATION }}" \
+            -derivedDataPath "${{ env.DERIVED_DATA_PATH }}" \
+            -enableCodeCoverage YES \
+            ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO | xcpretty --color
+      
+      - name: Run Unit Tests
+        run: |
+          set -o pipefail
+          xcodebuild test-without-building \
+            -project "${{ env.PROJECT }}" \
+            -scheme "${{ env.SCHEME }}" \
+            -configuration ${{ matrix.configuration }} \
+            -destination "${{ env.IOS_DESTINATION }}" \
+            -derivedDataPath "${{ env.DERIVED_DATA_PATH }}" \
+            -enableCodeCoverage YES \
+            -resultBundlePath TestResults.xcresult | xcpretty --color --test
+      
+      - name: Run Swift Testing Framework Tests
+        run: |
+          # Rodar testes do novo Swift Testing framework
+          swift test --parallel --xunit-output swift-test-results.xml
+        continue-on-error: true
+      
+      - name: Generate Code Coverage Report
+        if: matrix.configuration == 'Debug'
+        run: |
+          # Instalar xcov se não estiver instalado
+          gem install xcov || true
           
           # Gerar relatório de cobertura
-          xcrun xccov view \
-            --report \
-            --json \
-            ./TestResults-iOS${{ matrix.ios-version }}.xcresult > coverage.json
+          xcov --project "${{ env.PROJECT }}" \
+               --scheme "${{ env.SCHEME }}" \
+               --output_directory coverage_report \
+               --derived_data_path "${{ env.DERIVED_DATA_PATH }}" || true
           
-          # Calcular cobertura total
-          COVERAGE=$(cat coverage.json | python3 -c "
-          import json, sys
-          data = json.load(sys.stdin)
-          if 'targets' in data and len(data['targets']) > 0:
-              cov = data['targets'][0].get('lineCoverage', 0) * 100
-              print(f'{cov:.2f}')
-          else:
-              print('0.00')
-          ")
-          
-          echo "📊 Cobertura de código: ${COVERAGE}%"
-          
-          # Verificar cobertura mínima
-          if (( $(echo "$COVERAGE < ${{ env.CODECOV_MIN_COVERAGE }}" | bc -l) )); then
-            echo "⚠️ Cobertura abaixo do mínimo (${{ env.CODECOV_MIN_COVERAGE }}%)"
-          fi
-        fi
-    
-    - name: 📤 Upload Test Results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results-ios${{ matrix.ios-version }}
-        path: |
-          ./TestResults-iOS${{ matrix.ios-version }}.xcresult
-          test-results.json
-          coverage.json
-        retention-days: 30
-    
-    - name: 📤 Upload Build Logs
-      if: failure()
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-logs-ios${{ matrix.ios-version }}
-        path: |
-          build.log
-          test.log
-        retention-days: 7
+          # Alternativa usando xccov
+          xcrun xccov view --report --json TestResults.xcresult > coverage.json || true
+      
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-results-${{ matrix.configuration }}
+          path: |
+            TestResults.xcresult
+            swift-test-results.xml
+      
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v3
+        if: matrix.configuration == 'Debug' && always()
+        with:
+          name: coverage-report
+          path: |
+            coverage_report/
+            coverage.json
+      
+      - name: Report Coverage to Codecov
+        if: matrix.configuration == 'Debug'
+        uses: codecov/codecov-action@v3
+        with:
+          file: coverage.json
+          flags: unittests
+          name: codecov-umbrella
+        continue-on-error: true
 
-  # ============================================================================
-  # JOB: Testes de Performance
-  # ============================================================================
-  performance-tests:
-    name: ⚡ Performance Tests
+  # Job 3: Testes de UI
+  ui-tests:
+    name: UI Tests
     runs-on: macos-14
     needs: build-and-test
-    if: github.event_name == 'pull_request'
-    timeout-minutes: 30
     
     steps:
-    - name: 📥 Checkout
-      uses: actions/checkout@v4
-    
-    - name: 🔧 Setup Environment
-      run: |
-        sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
-    
-    - name: 🔐 Setup Secrets
-      run: |
-        cp ${{ env.SECRETS_PATH }}/Secrets-model.xcconfig ${{ env.SECRETS_PATH }}/Secrets.xcconfig
-        sed -i '' 's/YOUR_PUBLIC_KEY_HERE/${{ secrets.MARVEL_PUBLIC_KEY }}/' ${{ env.SECRETS_PATH }}/Secrets.xcconfig
-        sed -i '' 's/YOUR_PRIVATE_KEY_HERE/${{ secrets.MARVEL_PRIVATE_KEY }}/' ${{ env.SECRETS_PATH }}/Secrets.xcconfig
-    
-    - name: 💾 Restore Cache
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/Library/Developer/Xcode/DerivedData
-          .build
-          SourcePackages
-        key: ${{ runner.os }}-spm-perf-${{ hashFiles('**/Package.resolved') }}
-    
-    - name: ⚡ Run Performance Tests
-      run: |
-        echo "⚡ Executando testes de performance..."
-        
-        # Criar simulador para testes
-        DEVICE_ID=$(xcrun simctl create "Performance-iPhone" "iPhone 15 Pro" "iOS 17.5")
-        xcrun simctl boot "$DEVICE_ID"
-        
-        # Executar apenas testes de performance
-        xcodebuild test \
-          -project ${{ env.PROJECT_PATH }} \
-          -scheme ${{ env.SCHEME }} \
-          -destination "platform=iOS Simulator,id=$DEVICE_ID" \
-          -only-testing:MarvelAppTests/PerformanceTests \
-          -derivedDataPath ${{ env.DERIVED_DATA_PATH }} \
-          -resultBundlePath ./PerformanceResults.xcresult \
-          -enableCodeCoverage NO \
-          | xcbeautify || true
-    
-    - name: 📊 Analyze Performance Metrics
-      run: |
-        echo "📊 Analisando métricas de performance..."
-        
-        if [ -d "./PerformanceResults.xcresult" ]; then
-          xcrun xcresulttool get \
-            --path ./PerformanceResults.xcresult \
-            --format json > performance-results.json
-          
-          # Extrair métricas específicas (customize conforme necessário)
-          cat performance-results.json | python3 -c "
-          import json, sys
-          data = json.load(sys.stdin)
-          print('📊 Métricas de Performance:')
-          # Adicione análise customizada aqui
-          "
-        fi
-    
-    - name: 📤 Upload Performance Results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: performance-results
-        path: |
-          ./PerformanceResults.xcresult
-          performance-results.json
-        retention-days: 14
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ env.XCODE_VERSION }}
+      
+      - name: Setup Marvel API Keys
+        run: |
+          /usr/libexec/PlistBuddy -c "Set :MARVEL_PUBLIC_KEY ${{ secrets.MARVEL_PUBLIC_KEY }}" MarvelApp/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :MARVEL_PRIVATE_KEY ${{ secrets.MARVEL_PRIVATE_KEY }}" MarvelApp/Info.plist
+      
+      - name: Boot Simulator
+        run: |
+          xcrun simctl boot "iPhone 15 Pro" || true
+          xcrun simctl list
+      
+      - name: Run UI Tests
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project "${{ env.PROJECT }}" \
+            -scheme "${{ env.SCHEME }}" \
+            -destination "${{ env.IOS_DESTINATION }}" \
+            -only-testing:MarvelAppUITests \
+            -derivedDataPath "${{ env.DERIVED_DATA_PATH }}" \
+            -resultBundlePath UITestResults.xcresult | xcpretty --color --test
+      
+      - name: Upload UI Test Results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: ui-test-results
+          path: UITestResults.xcresult
+      
+      - name: Upload UI Test Screenshots
+        uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: ui-test-screenshots
+          path: |
+            ${{ env.DERIVED_DATA_PATH }}/Logs/Test/**/*.png
+            UITestResults.xcresult/Attachments/**/*.png
 
-  # ============================================================================
-  # JOB: Análise de Segurança
-  # ============================================================================
+  # Job 4: Análise de Segurança
   security-scan:
-    name: 🔒 Security Analysis
-    runs-on: ubuntu-latest
-    needs: validate
-    timeout-minutes: 15
-    
-    steps:
-    - name: 📥 Checkout
-      uses: actions/checkout@v4
-    
-    - name: 🔍 Run Semgrep
-      uses: returntocorp/semgrep-action@v1
-      with:
-        config: >-
-          p/swift
-          p/security-audit
-          p/owasp-top-ten
-      continue-on-error: true
-    
-    - name: 🔐 Check for Secrets
-      uses: trufflesecurity/trufflehog@main
-      with:
-        path: ./
-        base: ${{ github.event.repository.default_branch }}
-        head: HEAD
-      continue-on-error: true
-    
-    - name: 📋 Dependency Check
-      run: |
-        echo "📋 Verificando dependências conhecidas com vulnerabilidades..."
-        # Adicione verificação de dependências aqui
-
-  # ============================================================================
-  # JOB: Build de Produção
-  # ============================================================================
-  production-build:
-    name: 📦 Production Build
+    name: Security Scan
     runs-on: macos-14
-    needs: [build-and-test, security-scan]
-    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/')
-    timeout-minutes: 30
+    needs: lint
     
     steps:
-    - name: 📥 Checkout
-      uses: actions/checkout@v4
-    
-    - name: 🔧 Select Xcode
-      run: |
-        sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
-    
-    - name: 🔐 Setup Secrets
-      run: |
-        cp ${{ env.SECRETS_PATH }}/Secrets-model.xcconfig ${{ env.SECRETS_PATH }}/Secrets.xcconfig
-        sed -i '' 's/YOUR_PUBLIC_KEY_HERE/${{ secrets.MARVEL_PUBLIC_KEY }}/' ${{ env.SECRETS_PATH }}/Secrets.xcconfig
-        sed -i '' 's/YOUR_PRIVATE_KEY_HERE/${{ secrets.MARVEL_PRIVATE_KEY }}/' ${{ env.SECRETS_PATH }}/Secrets.xcconfig
-    
-    - name: 📦 Archive App
-      run: |
-        echo "📦 Criando build de produção..."
-        
-        xcodebuild archive \
-          -project ${{ env.PROJECT_PATH }} \
-          -scheme ${{ env.SCHEME }} \
-          -configuration Release \
-          -archivePath ./MarvelApp.xcarchive \
-          -destination "generic/platform=iOS" \
-          CODE_SIGN_IDENTITY="" \
-          CODE_SIGNING_REQUIRED=NO \
-          | xcbeautify
-    
-    - name: 📤 Upload Archive
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-archive
-        path: ./MarvelApp.xcarchive
-        retention-days: 90
-    
-    - name: 📊 Archive Info
-      run: |
-        echo "📊 Informações do Archive:"
-        xcodebuild -exportArchive -archivePath ./MarvelApp.xcarchive -exportPath ./export -exportOptionsPlist ExportOptions.plist || true
-        
-        # Tamanho do app
-        find ./MarvelApp.xcarchive -name "*.app" -exec du -sh {} \;
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Run Dependency Check
+        run: |
+          # Verificar vulnerabilidades em dependências SPM
+          swift package audit --target-all || true
+        continue-on-error: true
+      
+      - name: Check for Hardcoded Secrets
+        run: |
+          # Instalar e rodar gitleaks
+          brew install gitleaks
+          gitleaks detect --source . --verbose --no-git || true
+        continue-on-error: true
 
-  # ============================================================================
-  # JOB: Documentação
-  # ============================================================================
-  documentation:
-    name: 📚 Generate Documentation
+  # Job 5: Build de Produção (Release)
+  build-release:
+    name: Build Release
     runs-on: macos-14
-    needs: build-and-test
-    if: github.ref == 'refs/heads/main'
-    timeout-minutes: 20
+    needs: [build-and-test, ui-tests]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release/*')
     
     steps:
-    - name: 📥 Checkout
-      uses: actions/checkout@v4
-    
-    - name: 🔧 Setup
-      run: |
-        sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
-        brew install jazzy || true
-    
-    - name: 📚 Generate Docs with Jazzy
-      run: |
-        echo "📚 Gerando documentação..."
-        
-        jazzy \
-          --clean \
-          --author "Marvel App Team" \
-          --author_url https://github.com/${{ github.repository }} \
-          --github_url https://github.com/${{ github.repository }} \
-          --module MarvelApp \
-          --output ./docs \
-          --theme apple \
-          --min-acl internal \
-          --readme README.md || true
-    
-    - name: 📤 Upload Documentation
-      uses: actions/upload-artifact@v4
-      with:
-        name: documentation
-        path: ./docs
-        retention-days: 30
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ env.XCODE_VERSION }}
+      
+      - name: Setup Marvel API Keys
+        run: |
+          /usr/libexec/PlistBuddy -c "Set :MARVEL_PUBLIC_KEY ${{ secrets.MARVEL_PUBLIC_KEY }}" MarvelApp/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :MARVEL_PRIVATE_KEY ${{ secrets.MARVEL_PRIVATE_KEY }}" MarvelApp/Info.plist
+      
+      - name: Setup Certificates and Provisioning Profiles
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.BUILD_PROVISION_PROFILE_BASE64 }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          # Criar keychain temporário
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          
+          # Importar certificado e provisioning profile
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+          echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o $PP_PATH
+          
+          # Criar keychain temporário
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          
+          # Importar certificado
+          security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+          
+          # Aplicar provisioning profile
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
+        continue-on-error: true
+      
+      - name: Increment Build Number
+        run: |
+          # Incrementar build number baseado no número do run
+          BUILD_NUMBER=${{ github.run_number }}
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" MarvelApp/Info.plist
+      
+      - name: Build Archive
+        run: |
+          set -o pipefail
+          xcodebuild archive \
+            -project "${{ env.PROJECT }}" \
+            -scheme "${{ env.SCHEME }}" \
+            -configuration Release \
+            -archivePath $RUNNER_TEMP/MarvelApp.xcarchive \
+            -allowProvisioningUpdates \
+            DEVELOPMENT_TEAM=${{ secrets.DEVELOPMENT_TEAM }} | xcpretty --color
+      
+      - name: Export IPA
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath $RUNNER_TEMP/MarvelApp.xcarchive \
+            -exportPath $RUNNER_TEMP/export \
+            -exportOptionsPlist ExportOptions.plist \
+            -allowProvisioningUpdates
+        continue-on-error: true
+      
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: |
+            $RUNNER_TEMP/MarvelApp.xcarchive
+            $RUNNER_TEMP/export/*.ipa
 
-  # ============================================================================
-  # JOB: Relatório Final
-  # ============================================================================
-  report:
-    name: 📊 Final Report
-    runs-on: ubuntu-latest
-    needs: [build-and-test, lint, security-scan]
-    if: always()
-    timeout-minutes: 10
+  # Job 6: Deploy para TestFlight (Opcional)
+  deploy-testflight:
+    name: Deploy to TestFlight
+    runs-on: macos-14
+    needs: build-release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     
     steps:
-    - name: 📥 Download All Artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: ./artifacts
-    
-    - name: 📊 Generate Summary
-      run: |
-        echo "# 📊 CI/CD Pipeline Report" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        
-        echo "## 🔍 Build Information" >> $GITHUB_STEP_SUMMARY
-        echo "- **Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Run ID:** ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        
-        echo "## ✅ Jobs Status" >> $GITHUB_STEP_SUMMARY
-        echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
-        echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
-        echo "| Validate | ✅ |" >> $GITHUB_STEP_SUMMARY
-        echo "| Lint | ✅ |" >> $GITHUB_STEP_SUMMARY
-        echo "| Build & Test | ✅ |" >> $GITHUB_STEP_SUMMARY
-        echo "| Security | ✅ |" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        
-        echo "## 📦 Artifacts" >> $GITHUB_STEP_SUMMARY
-        echo "Os seguintes artifacts foram gerados:" >> $GITHUB_STEP_SUMMARY
-        echo "- Test Results" >> $GITHUB_STEP_SUMMARY
-        echo "- Coverage Reports" >> $GITHUB_STEP_SUMMARY
-        echo "- Lint Reports" >> $GITHUB_STEP_SUMMARY
-        echo "- Build Logs" >> $GITHUB_STEP_SUMMARY
-        
-        if [ -d "./artifacts" ]; then
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📁 Artifacts Details:" >> $GITHUB_STEP_SUMMARY
-          find ./artifacts -type f -name "*.json" -o -name "*.html" | head -20 | while read file; do
-            echo "- \`$(basename $file)\`" >> $GITHUB_STEP_SUMMARY
-          done
-        fi
-    
-    - name: 💬 Comment on PR
-      if: github.event_name == 'pull_request'
-      uses: actions/github-script@v7
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          const fs = require('fs');
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: build
+      
+      - name: Upload to TestFlight
+        env:
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_CONTENT: ${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT }}
+        run: |
+          # Criar arquivo de chave da API
+          echo "$APP_STORE_CONNECT_API_KEY_CONTENT" > AuthKey.p8
           
-          // Buscar resultados de teste se disponível
-          let testResults = '✅ Todos os testes passaram!';
-          let coverage = 'N/A';
-          
-          try {
-            if (fs.existsSync('./artifacts/test-results-ios17.5/coverage.json')) {
-              const coverageData = JSON.parse(fs.readFileSync('./artifacts/test-results-ios17.5/coverage.json', 'utf8'));
-              if (coverageData.targets && coverageData.targets[0]) {
-                coverage = `${(coverageData.targets[0].lineCoverage * 100).toFixed(2)}%`;
-              }
-            }
-          } catch (e) {
-            console.log('Não foi possível ler dados de cobertura');
-          }
-          
-          const comment = `## 🚀 CI/CD Pipeline Results
-          
-          ### ✅ Status: **Success**
-          
-          | Metric | Value |
-          |--------|-------|
-          | 🧪 Tests | ${testResults} |
-          | 📊 Coverage | ${coverage} |
-          | 🎨 Lint | ✅ Passed |
-          | 🔒 Security | ✅ No issues found |
-          
-          ### 📦 Artifacts
-          - [Test Results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-          - [Coverage Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-          
-          ---
-          *Generated by CI/CD Pipeline - Run #${{ github.run_number }}*`;
-          
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: comment
-          });
+          # Upload para TestFlight usando altool ou xcrun
+          xcrun altool --upload-app \
+            --type ios \
+            --file build/*.ipa \
+            --apiKey "$APP_STORE_CONNECT_API_KEY_ID" \
+            --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID"
+        continue-on-error: true
 
-  # ============================================================================
-  # JOB: Notificação
-  # ============================================================================
+  # Job 7: Notificação
   notify:
-    name: 📮 Send Notifications
+    name: Send Notifications
     runs-on: ubuntu-latest
-    needs: report
-    if: always() && (github.ref == 'refs/heads/main' || github.event_name == 'pull_request')
+    needs: [build-and-test, ui-tests, security-scan]
+    if: always()
     
     steps:
-    - name: 📮 Notify Status
-      run: |
-        echo "📮 Enviando notificações..."
-        
-        # Adicione suas integrações de notificação aqui:
-        # - Slack
-        # - Discord
-        # - Email
-        # - MS Teams
-        
-        if [ "${{ needs.report.result }}" == "success" ]; then
-          echo "✅ Pipeline concluído com sucesso!"
-        else
-          echo "❌ Pipeline falhou. Verifique os logs."
-        fi
+      - name: Notify Slack
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: |
+            Pipeline Status: ${{ job.status }}
+            Commit: ${{ github.sha }}
+            Author: ${{ github.actor }}
+            Branch: ${{ github.ref }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        continue-on-error: true
+      
+      - name: Create Issue on Failure
+        if: failure() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `CI/CD Pipeline Failed - Run #${context.runNumber}`,
+              body: `The CI/CD pipeline failed on ${context.ref}.\n\nCommit: ${context.sha}\nAuthor: ${context.actor}\n\n[View Run](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`,
+              labels: ['ci-failure', 'automated']
+            });
+        continue-on-error: true
