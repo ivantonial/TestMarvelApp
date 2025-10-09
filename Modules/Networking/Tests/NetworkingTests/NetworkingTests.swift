@@ -1,16 +1,16 @@
-import XCTest
-import Testing
 import Alamofire
-@testable import Networking
 @testable import Core
+@testable import Networking
+import Testing
+import XCTest
 
 // MARK: - Mock Endpoint
 struct MockEndpoint: APIEndpoint {
     var baseURL: String = "https://api.example.com"
     var path: String = "/test"
     var method: HTTPMethod = .get
-    var headers: HTTPHeaders? = nil
-    var parameters: Parameters? = nil
+    var headers: HTTPHeaders?
+    var parameters: Parameters?
     var encoding: ParameterEncoding = URLEncoding.default
 }
 

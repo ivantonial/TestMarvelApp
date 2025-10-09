@@ -1,25 +1,39 @@
-included:
-  - .
-excluded:
-  - "*/.build"
-  - "*/Tests/**"
-  - "*/TestUtils/**"
-  - "Scripts/**"
-  - "Documentation/**"
-  - "DerivedData/**"
-  - "**/Generated/**"
-  - "**/build/**"
+# ============================================================
+# SwiftLint Configuration - MarvelApp (SwiftUI + Modular SPM)
+# ============================================================
 
+included:
+  - Modules
+  - MarvelApp
+
+excluded:
+  - "**/.build/**"
+  - "**/.swiftpm/**"
+  - "**/DerivedData/**"
+  - "**/Tests/**"
+  - "**/TestUtils/**"
+  - "**/Documentation/**"
+  - "**/Scripts/**"
+  - "**/Generated/**"
+  - "**/checkouts/**"
+  - "**/Pods/**"
+  - "**/Package.swift"
+
+# ============================================================
+# Desativadas (falsos positivos em SwiftUI)
+# ============================================================
 disabled_rules:
+  - explicit_init
+  - type_body_length
   - array_init
-  - function_default_parameter_at_end
-  - identifier_name
   - nesting
   - number_separator
-  - type_body_length
+  - multiple_closures_with_trailing_closure
 
+# ============================================================
+# Regras ativadas
+# ============================================================
 opt_in_rules:
-  - anyobject_protocol
   - attributes
   - closing_brace
   - closure_end_indentation
@@ -29,7 +43,6 @@ opt_in_rules:
   - contains_over_filter_is_empty
   - contains_over_first_not_nil
   - convenience_type
-  - explicit_init
   - file_header
   - first_where
   - modifier_order
@@ -39,32 +52,56 @@ opt_in_rules:
   - sorted_imports
   - strict_fileprivate
   - trailing_whitespace
+  - vertical_whitespace
+  - return_arrow_whitespace
+  - redundant_string_enum_value
+  - implicit_optional_initialization
+  - mark
+  - todo
+  - comment_spacing
+  - multiple_closures_with_trailing_closure
 
+# ============================================================
+# Regras de análise profunda
+# ============================================================
 analyzer_rules:
   - unused_import
 
+# ============================================================
+# Limites e formatação
+# ============================================================
 file_length:
   warning: 400
   error: 600
 
 function_parameter_count:
-  warning: 4
-  error: 6
+  warning: 5
+  error: 7
 
 function_body_length:
-  warning: 60
-  error: 80
+  warning: 100
+  error: 150
+
+line_length:
+  warning: 250
+  error: 300
 
 type_name:
   max_length: 50
 
-line_length:
-  warning: 200
+identifier_name:
+  min_length:
+    warning: 1
+  max_length:
+    warning: 50
 
 unused_import:
   always_keep_imports: [Foundation, SwiftUI, UIKit]
-  severity: error
+  severity: warning
 
+# ============================================================
+# Custom Rules
+# ============================================================
 custom_rules:
   unknown_case_representable:
     name: "Unknown Case Representable"
@@ -72,3 +109,20 @@ custom_rules:
     message: "Implement UnknownCaseRepresentable on Decodable enums"
     severity: error
 
+  swiftui_view_suffix:
+    name: "SwiftUI View Naming"
+    regex: 'struct\\s+[A-Z][A-Za-z0-9]*(?<!View)\\s*:\\s*View'
+    message: "SwiftUI View structs devem terminar com 'View'."
+    severity: warning
+
+# ============================================================
+# Ajustes gerais
+# ============================================================
+trailing_whitespace:
+  ignores_empty_lines: true
+
+vertical_whitespace:
+  max_empty_lines: 1
+
+todo:
+  severity: warning

@@ -1,11 +1,11 @@
 // The Swift Programming Language
 // https://docs.swift.org/swift-book
 
-import SwiftUI
-import Core
 import CharacterList
+import Core
 import MarvelAPI
 import Networking
+import SwiftUI
 
 @MainActor
 public final class AppCoordinator: ObservableObject {

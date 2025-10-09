@@ -5,8 +5,8 @@
 //  Created by Ivan Tonial IP.TV on 07/10/25.
 //
 
-import Foundation
 import Core
+import Foundation
 
 // MARK: - Response Wrapper
 public struct MarvelResponse<T: Decodable & Sendable>: Decodable, Sendable {
@@ -110,7 +110,7 @@ public struct StorySummary: Decodable, Sendable {
 
 public enum StoryType: String, Decodable, UnknownCaseRepresentable, Sendable {
     case cover
-    case interiorStory = "interiorStory"
+    case interiorStory
     case unknown
 
     public static let unknownCase = Self.unknown

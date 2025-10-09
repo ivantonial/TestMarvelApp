@@ -5,9 +5,9 @@
 //  Created by Ivan Tonial IP.TV on 07/10/25.
 //
 
-import Foundation
 import Alamofire
 import Core
+import Foundation
 
 /// Protocolo para endpoints da API
 public protocol APIEndpoint {

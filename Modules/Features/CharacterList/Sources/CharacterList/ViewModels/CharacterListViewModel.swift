@@ -5,10 +5,10 @@
 //  Created by Ivan Tonial IP.TV on 07/10/25.
 //
 
-import Foundation
-import SwiftUI
-import MarvelAPI
 import Core
+import Foundation
+import MarvelAPI
+import SwiftUI
 
 @MainActor
 public final class CharacterListViewModel: ObservableObject {
