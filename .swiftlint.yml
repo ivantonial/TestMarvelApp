@@ -1,0 +1,74 @@
+included:
+  - .
+excluded:
+  - "*/.build"
+  - "*/Tests/**"
+  - "*/TestUtils/**"
+  - "Scripts/**"
+  - "Documentation/**"
+  - "DerivedData/**"
+  - "**/Generated/**"
+  - "**/build/**"
+
+disabled_rules:
+  - array_init
+  - function_default_parameter_at_end
+  - identifier_name
+  - nesting
+  - number_separator
+  - type_body_length
+
+opt_in_rules:
+  - anyobject_protocol
+  - attributes
+  - closing_brace
+  - closure_end_indentation
+  - closure_spacing
+  - collection_alignment
+  - contains_over_filter_count
+  - contains_over_filter_is_empty
+  - contains_over_first_not_nil
+  - convenience_type
+  - explicit_init
+  - file_header
+  - first_where
+  - modifier_order
+  - operator_usage_whitespace
+  - overridden_super_call
+  - redundant_nil_coalescing
+  - sorted_imports
+  - strict_fileprivate
+  - trailing_whitespace
+
+analyzer_rules:
+  - unused_import
+
+file_length:
+  warning: 400
+  error: 600
+
+function_parameter_count:
+  warning: 4
+  error: 6
+
+function_body_length:
+  warning: 60
+  error: 80
+
+type_name:
+  max_length: 50
+
+line_length:
+  warning: 200
+
+unused_import:
+  always_keep_imports: [Foundation, SwiftUI, UIKit]
+  severity: error
+
+custom_rules:
+  unknown_case_representable:
+    name: "Unknown Case Representable"
+    regex: "(?-s)enum.* (Codable|Decodable)(?!.*UnknownCaseRepresentable)"
+    message: "Implement UnknownCaseRepresentable on Decodable enums"
+    severity: error
+
