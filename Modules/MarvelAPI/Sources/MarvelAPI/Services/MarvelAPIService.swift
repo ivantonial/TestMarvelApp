@@ -145,7 +145,7 @@ public final class MarvelService: MarvelServiceProtocol, @unchecked Sendable {
 }
 
 // MARK: - Comic Model
-public struct Comic: Decodable, Identifiable {
+public struct Comic: Decodable, Identifiable, Sendable {
     public let id: Int
     public let title: String
     public let description: String?
