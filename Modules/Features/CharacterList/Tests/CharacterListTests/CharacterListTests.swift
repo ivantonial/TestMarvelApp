@@ -1,9 +1,8 @@
-import XCTest
-import Testing
-import Networking
 @testable import CharacterList
 @testable import MarvelAPI
-
+import Networking
+import Testing
+import XCTest
 
 // MARK: - Mock Service
 final class MockMarvelService: MarvelServiceProtocol, @unchecked Sendable {
@@ -191,4 +190,3 @@ class CharacterListUITests: XCTestCase {
         }
     }
 }
-

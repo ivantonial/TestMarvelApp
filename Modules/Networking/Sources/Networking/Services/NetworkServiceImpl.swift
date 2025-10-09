@@ -4,9 +4,9 @@
 //  Created by Ivan Tonial IP.TV on 07/10/25.
 //
 
-import Foundation
 import Alamofire
 import Core
+import Foundation
 
 /// Implementação do serviço de rede usando Alamofire
 @available(iOS 16.0, *)

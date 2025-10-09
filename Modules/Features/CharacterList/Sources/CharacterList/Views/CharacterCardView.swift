@@ -5,9 +5,9 @@
 //  Created by Ivan Tonial IP.TV on 07/10/25.
 //
 
-import SwiftUI
-import MarvelAPI
 import DesignSystem
+import MarvelAPI
+import SwiftUI
 
 struct CharacterCardView: View {
     let model: CharacterCardModel

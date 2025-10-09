@@ -5,10 +5,10 @@
 //  Created by Ivan Tonial IP.TV on 07/10/25.
 //
 
-import Foundation
-import Networking
 import Alamofire
 import Crypto
+import Foundation
+import Networking
 
 // MARK: - Marvel API Configuration
 public struct MarvelAPIConfig {
@@ -96,7 +96,7 @@ public enum MarvelEndpoint: APIEndpoint {
     }
 
     private func generateHash(timestamp: String, privateKey: String, publicKey: String) -> String {
-        let data = "\(timestamp)\(privateKey)\(publicKey)".data(using: .utf8)!
+        let data = Data("\(timestamp)\(privateKey)\(publicKey)".utf8)
         let hash = Insecure.MD5.hash(data: data)
         return hash.map { String(format: "%02x", $0) }.joined()
     }

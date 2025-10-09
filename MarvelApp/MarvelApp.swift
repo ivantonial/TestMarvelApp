@@ -5,8 +5,8 @@
 //  Created by Ivan Tonial IP.TV on 07/10/25.
 //
 
-import SwiftUI
 import AppCoordinator
+import SwiftUI
 
 @main
 struct MarvelApp: App {
