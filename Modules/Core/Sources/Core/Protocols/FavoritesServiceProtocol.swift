@@ -6,11 +6,21 @@
 //
 
 import Foundation
-import MarvelAPI
+
+public struct FavoriteCharacterInput: Sendable {
+    public let id: Int
+    public let name: String
+    public let thumbnailURL: URL?
+
+    public init(id: Int, name: String, thumbnailURL: URL?) {
+        self.id = id
+        self.name = name
+        self.thumbnailURL = thumbnailURL
+    }
+}
 
 public protocol FavoritesServiceProtocol: Sendable {
     func isFavorite(characterId: Int) async -> Bool
-    func addFavorite(character: Character) async throws
+    func addFavorite(character: FavoriteCharacterInput) async throws
     func removeFavorite(characterId: Int) async throws
-    func getAllFavorites() async throws -> [Character]
 }

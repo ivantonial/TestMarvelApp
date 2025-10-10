@@ -1,7 +1,9 @@
 // The Swift Programming Language
 // https://docs.swift.org/swift-book
 
+import CharacterDetail
 import CharacterList
+import ComicsList
 import Core
 import MarvelAPI
 import Networking
@@ -21,8 +23,10 @@ public final class AppCoordinator: ObservableObject {
         let privateKey = Bundle.main.object(forInfoDictionaryKey: "MARVEL_PRIVATE_KEY") as? String ?? ""
 
         // 🔍 (Opcional) Logar as chaves para debug — remova em produção
+        #if DEBUG
         print("🔑 Marvel Public Key:", publicKey.isEmpty ? "❌ Vazia" : "✅ Encontrada")
         print("🔒 Marvel Private Key:", privateKey.isEmpty ? "❌ Vazia" : "✅ Encontrada")
+        #endif
 
         // ⚙️ Configurar Marvel API
         let config = MarvelAPIConfig(publicKey: publicKey, privateKey: privateKey)
@@ -67,34 +71,33 @@ public final class AppCoordinator: ObservableObject {
 
     @ViewBuilder
     private func characterDetailView(character: Character) -> some View {
-        VStack {
-            Text(character.name)
-                .font(.largeTitle)
-                .padding(.bottom, 8)
+        let fetchDetailUseCase = FetchCharacterDetailUseCase(service: marvelService)
+        let fetchComicsUseCase = FetchCharacterComicsUseCase(service: marvelService)
 
-            AsyncImage(url: character.thumbnail.secureUrl)
-                .frame(width: 200, height: 200)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+        let viewModel = CharacterDetailViewModel(
+            character: character,
+            fetchCharacterDetailUseCase: fetchDetailUseCase,
+            fetchCharacterComicsUseCase: fetchComicsUseCase,
+            favoritesService: nil  // Pode adicionar FavoritesService mais tarde
+        )
 
-            Text(character.description.isEmpty ? "Sem descrição disponível." : character.description)
-                .font(.body)
-                .padding()
-
-            Button("Ver Quadrinhos") { [weak self] in
+        CharacterDetailView(
+            viewModel: viewModel,
+            onComicsSelected: { [weak self] in
                 self?.navigate(to: .comics(character))
             }
-            .padding()
-            .buttonStyle(.borderedProminent)
-        }
-        .padding()
-        .navigationTitle(character.name)
+        )
     }
 
     @ViewBuilder
     private func comicsListView(character: Character) -> some View {
-        Text("Quadrinhos de \(character.name)")
-            .font(.title)
-            .padding()
+        let fetchComicsUseCase = FetchCharacterComicsUseCase(service: marvelService)
+        let viewModel = ComicsListViewModel(
+            character: character,
+            fetchCharacterComicsUseCase: fetchComicsUseCase
+        )
+
+        ComicsListView(viewModel: viewModel)
     }
 
     // MARK: - Navegação
@@ -111,10 +114,4 @@ public final class AppCoordinator: ObservableObject {
     public func navigateToRoot() {
         navigationPath.removeLast(navigationPath.count)
     }
-}
-
-// MARK: - Enum de Destinos
-public enum CharacterDestination: Hashable {
-    case detail(Character)
-    case comics(Character)
 }

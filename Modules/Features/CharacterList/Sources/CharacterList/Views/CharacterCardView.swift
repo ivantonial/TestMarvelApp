@@ -9,12 +9,16 @@ import DesignSystem
 import MarvelAPI
 import SwiftUI
 
-struct CharacterCardView: View {
+public struct CharacterCardView: View {
     let model: CharacterCardModel
 
-    var body: some View {
+    public init(model: CharacterCardModel) {
+        self.model = model
+    }
+
+    public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Character Image com tamanho fixo
+            // Character Image quadrada
             GeometryReader { geometry in
                 AsyncImage(url: model.imageURL) { phase in
                     switch phase {
@@ -44,7 +48,7 @@ struct CharacterCardView: View {
             }
             .aspectRatio(1, contentMode: .fit)
 
-            // Character Info com altura fixa
+            // Info
             VStack(alignment: .leading, spacing: 4) {
                 Text(model.name)
                     .font(.headline)

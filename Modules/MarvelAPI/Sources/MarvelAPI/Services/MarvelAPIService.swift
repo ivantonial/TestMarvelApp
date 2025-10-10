@@ -143,11 +143,3 @@ public final class MarvelService: MarvelServiceProtocol, @unchecked Sendable {
         return response.data.results
     }
 }
-
-// MARK: - Comic Model
-public struct Comic: Decodable, Identifiable, Sendable {
-    public let id: Int
-    public let title: String
-    public let description: String?
-    public let thumbnail: MarvelImage
-}
