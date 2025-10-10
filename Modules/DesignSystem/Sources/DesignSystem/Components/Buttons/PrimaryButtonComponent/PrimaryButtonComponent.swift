@@ -1,5 +1,5 @@
 //
-//  PrimaryButtonView.swift
+//  PrimaryButtonComponent.swift
 //  DesignSystem
 //
 //  Created by Ivan Tonial IP.TV on 07/10/25.
@@ -9,7 +9,7 @@ import Core
 import SwiftUI
 
 // MARK: - Primary Button
-public struct PrimaryButtonView: View {
+public struct PrimaryButtonComponent: View {
     let model: PrimaryButtonModel
 
     public init(model: PrimaryButtonModel) {
@@ -100,7 +100,7 @@ public struct ErrorView: View {
                 .padding(.horizontal)
 
             if let retryAction = model.retryAction {
-                PrimaryButtonView(
+                PrimaryButtonComponent(
                     model: PrimaryButtonModel(
                         title: "Tentar Novamente",
                         action: retryAction
