@@ -14,7 +14,6 @@ public struct CharacterListView: View {
     @StateObject private var viewModel: CharacterListViewModel
     private let onCharacterSelected: ((Character) -> Void)?
 
-    // Estado para controlar se a barra de busca está expandida
     @State private var isSearching = false
 
     public init(
@@ -27,34 +26,30 @@ public struct CharacterListView: View {
 
     public var body: some View {
         ZStack {
-            // Fundo preto
-            Color.black
-                .ignoresSafeArea()
+            Color.black.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Header fixo no topo - CENTRALIZADO
                 headerView
                     .background(Color.black)
                     .zIndex(1)
 
-                // Conteúdo principal
                 if viewModel.isLoading && viewModel.characters.isEmpty {
                     Spacer()
-                    LoadingView(model: LoadingViewModel(message: "Carregando heróis..."))
+                    LoadingComponent(message: "Carregando heróis...")
                     Spacer()
                 } else if let error = viewModel.error, viewModel.characters.isEmpty {
                     Spacer()
-                    ErrorView(model: ErrorViewModel(
+                    ErrorComponent(
                         message: error.localizedDescription,
                         retryAction: viewModel.refresh
-                    ))
+                    )
                     Spacer()
                 } else {
                     contentScrollView
                 }
             }
 
-            // Barra de busca FLUTUANTE com animação
+            // Search bar flutuante
             VStack {
                 Spacer()
                 floatingSearchBar
@@ -69,20 +64,17 @@ public struct CharacterListView: View {
         }
     }
 
-    // MARK: - Header View (Título Centralizado)
+    // MARK: - Header
     private var headerView: some View {
-        VStack(spacing: 0) {
-            Text("Marvel Heroes")
-                .font(.system(size: 34, weight: .bold))
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.horizontal)
-                .padding(.top, 10)
-                .padding(.bottom, 15)
-        }
+        Text("Marvel Heroes")
+            .font(.system(size: 34, weight: .bold))
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.top, 10)
+            .padding(.bottom, 15)
     }
 
-    // MARK: - Conteúdo Scrollável
+    // MARK: - Conteúdo
     private var contentScrollView: some View {
         ScrollView {
             LazyVGrid(columns: gridColumns(), spacing: 16) {
@@ -115,7 +107,7 @@ public struct CharacterListView: View {
         }
     }
 
-    // MARK: - Barra de Busca Flutuante com Expansão Animada
+    // MARK: - Search bar
     private var floatingSearchBar: some View {
         HStack(spacing: 12) {
             Image(systemName: "magnifyingglass")
@@ -127,35 +119,27 @@ public struct CharacterListView: View {
                     .foregroundColor(.white)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
-                    .transition(.move(edge: .trailing).combined(with: .opacity))
 
                 if !viewModel.searchText.isEmpty {
-                    Button(action: {
-                        viewModel.searchText = ""
-                    }) {
+                    Button(action: { viewModel.searchText = "" }) {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundColor(.white.opacity(0.8))
                     }
-                    .transition(.scale.combined(with: .opacity))
                 }
 
-                Button(action: {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                Button("Cancelar") {
+                    withAnimation(.spring()) {
                         isSearching = false
                         viewModel.searchText = ""
                         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                     }
-                }) {
-                    Text("Cancelar")
-                        .foregroundColor(.white)
-                        .font(.system(size: 14, weight: .medium))
                 }
-                .transition(.move(edge: .trailing).combined(with: .opacity))
+                .foregroundColor(.white)
+                .font(.system(size: 14, weight: .medium))
             } else {
                 Text("Buscar")
                     .foregroundColor(.white)
                     .font(.system(size: 16, weight: .medium))
-                    .transition(.opacity)
             }
         }
         .padding(.horizontal, 16)
@@ -171,19 +155,13 @@ public struct CharacterListView: View {
         )
         .onTapGesture {
             if !isSearching {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    isSearching = true
-                }
+                withAnimation(.spring()) { isSearching = true }
             }
         }
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSearching)
     }
-    
+
     private func gridColumns() -> [GridItem] {
-        [
-            GridItem(.flexible(), spacing: 16),
-            GridItem(.flexible(), spacing: 16)
-        ]
+        [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)]
     }
 
     private func refreshData() async {

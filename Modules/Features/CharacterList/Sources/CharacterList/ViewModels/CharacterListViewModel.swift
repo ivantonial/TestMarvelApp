@@ -28,9 +28,7 @@ public final class CharacterListViewModel: ObservableObject {
     // MARK: - Computed Properties
     public var filteredCharacters: [Character] {
         guard !searchText.isEmpty else { return characters }
-        return characters.filter { character in
-            character.name.localizedCaseInsensitiveContains(searchText)
-        }
+        return characters.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
     }
 
     public var characterCardModels: [CharacterCardModel] {
@@ -76,10 +74,7 @@ public final class CharacterListViewModel: ObservableObject {
         defer { isLoading = false }
 
         do {
-            let result = try await fetchCharactersUseCase.execute(
-                offset: currentOffset,
-                limit: pageSize
-            )
+            let result = try await fetchCharactersUseCase.execute(offset: currentOffset, limit: pageSize)
 
             if isInitial {
                 characters = result
@@ -91,10 +86,9 @@ public final class CharacterListViewModel: ObservableObject {
 
             currentOffset += pageSize
             hasMorePages = result.count == pageSize
-
         } catch {
             self.error = error
-            print("Erro ao carregar personagens: \(error)")
+            print("❌ Erro ao carregar personagens: \(error)")
         }
     }
 }

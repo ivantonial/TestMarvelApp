@@ -28,7 +28,7 @@ public struct MarvelDataContainer<T: Decodable & Sendable>: Decodable, Sendable 
 }
 
 // MARK: - Character Models
-public struct Character: Decodable, Identifiable, Sendable {
+public struct Character: Decodable, Identifiable, Sendable, Hashable {
     public let id: Int
     public let name: String
     public let description: String
@@ -40,11 +40,33 @@ public struct Character: Decodable, Identifiable, Sendable {
     public let stories: StoryList
     public let events: EventList
     public let urls: [MarvelURL]
+
+    public init(id: Int, name: String, description: String, modified: String, thumbnail: MarvelImage, resourceURI: String, comics: ComicList, series: SeriesList, stories: StoryList, events: EventList, urls: [MarvelURL]) {
+        self.id = id
+        self.name = name
+        self.description = description
+        self.modified = modified
+        self.thumbnail = thumbnail
+        self.resourceURI = resourceURI
+        self.comics = comics
+        self.series = series
+        self.stories = stories
+        self.events = events
+        self.urls = urls
+    }
+
+    public static func == (lhs: Character, rhs: Character) -> Bool { lhs.id == rhs.id }
+    public func hash(into hasher: inout Hasher) { hasher.combine(id) }
 }
 
 public struct MarvelImage: Decodable, Sendable {
     public let path: String
     public let `extension`: String
+
+    public init(path: String, extension: String) {
+        self.path = path
+        self.`extension` = `extension`
+    }
 
     public var url: URL? {
         URL(string: "\(path).\(`extension`)")
@@ -76,11 +98,23 @@ public struct ComicList: Decodable, Sendable {
     public let collectionURI: String
     public let items: [ComicSummary]
     public let returned: Int
+
+    public init(available: Int, collectionURI: String, items: [ComicSummary], returned: Int) {
+        self.available = available
+        self.collectionURI = collectionURI
+        self.items = items
+        self.returned = returned
+    }
 }
 
 public struct ComicSummary: Decodable, Sendable {
     public let resourceURI: String
     public let name: String
+
+    public init(resourceURI: String, name: String) {
+        self.resourceURI = resourceURI
+        self.name = name
+    }
 }
 
 public struct SeriesList: Decodable, Sendable {
@@ -88,11 +122,23 @@ public struct SeriesList: Decodable, Sendable {
     public let collectionURI: String
     public let items: [SeriesSummary]
     public let returned: Int
+
+    public init(available: Int, collectionURI: String, items: [SeriesSummary], returned: Int) {
+        self.available = available
+        self.collectionURI = collectionURI
+        self.items = items
+        self.returned = returned
+    }
 }
 
 public struct SeriesSummary: Decodable, Sendable {
     public let resourceURI: String
     public let name: String
+
+    public init(resourceURI: String, name: String) {
+        self.resourceURI = resourceURI
+        self.name = name
+    }
 }
 
 public struct StoryList: Decodable, Sendable {
@@ -100,12 +146,25 @@ public struct StoryList: Decodable, Sendable {
     public let collectionURI: String
     public let items: [StorySummary]
     public let returned: Int
+
+    public init(available: Int, collectionURI: String, items: [StorySummary], returned: Int) {
+        self.available = available
+        self.collectionURI = collectionURI
+        self.items = items
+        self.returned = returned
+    }
 }
 
 public struct StorySummary: Decodable, Sendable {
     public let resourceURI: String
     public let name: String
     public let type: StoryType
+
+    public init(resourceURI: String, name: String, type: StoryType) {
+        self.resourceURI = resourceURI
+        self.name = name
+        self.type = type
+    }
 }
 
 public enum StoryType: String, Decodable, UnknownCaseRepresentable, Sendable {
@@ -121,15 +180,45 @@ public struct EventList: Decodable, Sendable {
     public let collectionURI: String
     public let items: [EventSummary]
     public let returned: Int
+
+    public init(available: Int, collectionURI: String, items: [EventSummary], returned: Int) {
+        self.available = available
+        self.collectionURI = collectionURI
+        self.items = items
+        self.returned = returned
+    }
 }
 
 public struct EventSummary: Decodable, Sendable {
     public let resourceURI: String
     public let name: String
+
+    public init(resourceURI: String, name: String) {
+        self.resourceURI = resourceURI
+        self.name = name
+    }
 }
 
-// MARK: - Card Model
-public struct CharacterCardModel: Sendable {
+// MARK: - Comic Models
+public struct Comic: Decodable, Identifiable, Sendable, Hashable {
+    public let id: Int
+    public let title: String
+    public let description: String?
+    public let thumbnail: MarvelImage
+
+    public init(id: Int, title: String, description: String?, thumbnail: MarvelImage) {
+        self.id = id
+        self.title = title
+        self.description = description
+        self.thumbnail = thumbnail
+    }
+
+    public static func == (lhs: Comic, rhs: Comic) -> Bool { lhs.id == rhs.id }
+    public func hash(into hasher: inout Hasher) { hasher.combine(id) }
+}
+
+// MARK: - (Opcional) Resumo de domínio, sem semântica de UI
+public struct CharacterSummaryModel: Sendable {
     public let id: Int
     public let name: String
     public let imageURL: URL?
@@ -140,16 +229,5 @@ public struct CharacterCardModel: Sendable {
         self.name = character.name
         self.imageURL = character.thumbnail.secureUrl
         self.comicsCount = character.comics.available
-    }
-}
-
-// MARK: - Hashable & Equatable
-extension Character: Hashable, Equatable {
-    public static func == (lhs: Character, rhs: Character) -> Bool {
-        lhs.id == rhs.id
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
     }
 }

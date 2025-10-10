@@ -1,3 +1,4 @@
+//
 //  NetworkService.swift
 //  Networking
 //
@@ -5,7 +6,6 @@
 //
 
 import Alamofire
-import Core
 import Foundation
 
 /// Implementação do serviço de rede usando Alamofire
