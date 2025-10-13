@@ -79,17 +79,19 @@ public struct CharacterListView: View {
         ScrollView {
             LazyVGrid(columns: gridColumns(), spacing: 16) {
                 ForEach(viewModel.characterCardModels, id: \.id) { cardModel in
-                    CharacterCardView(model: cardModel)
-                        .onTapGesture {
+                    CharacterCardView(
+                        model: cardModel,
+                        onTap: {
                             if let character = viewModel.filteredCharacters.first(where: { $0.id == cardModel.id }) {
                                 onCharacterSelected?(character)
                             }
                         }
-                        .onAppear {
-                            if let character = viewModel.filteredCharacters.first(where: { $0.id == cardModel.id }) {
-                                viewModel.loadMoreIfNeeded(currentCharacter: character)
-                            }
+                    )
+                    .onAppear {
+                        if let character = viewModel.filteredCharacters.first(where: { $0.id == cardModel.id }) {
+                            viewModel.loadMoreIfNeeded(currentCharacter: character)
                         }
+                    }
                 }
 
                 if viewModel.isLoading && !viewModel.characters.isEmpty {

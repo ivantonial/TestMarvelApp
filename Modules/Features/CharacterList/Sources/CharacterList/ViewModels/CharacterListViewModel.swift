@@ -88,7 +88,7 @@ public final class CharacterListViewModel: ObservableObject {
             hasMorePages = result.count == pageSize
         } catch {
             self.error = error
-            print("❌ Erro ao carregar personagens: \(error)")
+            print("⌛ Erro ao carregar personagens: \(error)")
         }
     }
 }

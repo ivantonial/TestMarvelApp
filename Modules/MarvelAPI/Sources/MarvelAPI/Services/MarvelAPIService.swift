@@ -28,6 +28,10 @@ public enum MarvelEndpoint: APIEndpoint {
     case characters(offset: Int = 0, limit: Int = 20)
     case character(id: Int)
     case characterComics(characterId: Int, offset: Int = 0, limit: Int = 20)
+    case searchCharacters(query: String, offset: Int = 0, limit: Int = 20)
+    case searchComics(query: String, offset: Int = 0, limit: Int = 20)
+    case comics(offset: Int = 0, limit: Int = 20)
+
 
     nonisolated(unsafe) private static var config: MarvelAPIConfig?
 
@@ -44,12 +48,14 @@ public enum MarvelEndpoint: APIEndpoint {
 
     public var path: String {
         switch self {
-        case .characters:
+        case .characters, .searchCharacters:
             return "/characters"
         case .character(let id):
             return "/characters/\(id)"
         case .characterComics(let characterId, _, _):
             return "/characters/\(characterId)/comics"
+        case .comics, .searchComics:
+            return "/comics"
         }
     }
 
@@ -84,6 +90,23 @@ public enum MarvelEndpoint: APIEndpoint {
             params["offset"] = offset
             params["limit"] = limit
 
+        case .searchCharacters(let query, let offset, let limit):
+            params["nameStartsWith"] = query
+            params["offset"] = offset
+            params["limit"] = limit
+            params["orderBy"] = "-modified"
+
+        case .searchComics(let query, let offset, let limit):
+            params["titleStartsWith"] = query
+            params["offset"] = offset
+            params["limit"] = limit
+            params["orderBy"] = "-onsaleDate"
+
+        case .comics(let offset, let limit):
+            params["offset"] = offset
+            params["limit"] = limit
+            params["orderBy"] = "-onsaleDate"
+
         default:
             break
         }
@@ -107,6 +130,9 @@ public protocol MarvelServiceProtocol: Sendable {
     func fetchCharacters(offset: Int, limit: Int) async throws -> [Character]
     func fetchCharacter(by id: Int) async throws -> Character
     func fetchCharacterComics(characterId: Int, offset: Int, limit: Int) async throws -> [Comic]
+    func searchCharacters(query: String, offset: Int, limit: Int) async throws -> [Character]
+    func searchComics(query: String, offset: Int, limit: Int) async throws -> [Comic]
+    func fetchComics(offset: Int, limit: Int) async throws -> [Comic]
 }
 
 public final class MarvelService: MarvelServiceProtocol, @unchecked Sendable {
@@ -140,6 +166,31 @@ public final class MarvelService: MarvelServiceProtocol, @unchecked Sendable {
                                                      limit: limit)
         let response = try await networkService.request(endpoint,
                                                        responseType: MarvelResponse<Comic>.self)
+        return response.data.results
+    }
+
+    public func searchCharacters(query: String, offset: Int = 0, limit: Int = 20) async throws -> [Character] {
+        // Remove espaços e valida query
+        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedQuery.isEmpty else { return [] }
+
+        let endpoint = MarvelEndpoint.searchCharacters(query: trimmedQuery, offset: offset, limit: limit)
+        let response = try await networkService.request(endpoint, responseType: MarvelResponse<Character>.self)
+        return response.data.results
+    }
+
+    public func searchComics(query: String, offset: Int = 0, limit: Int = 20) async throws -> [Comic] {
+        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedQuery.isEmpty else { return [] }
+
+        let endpoint = MarvelEndpoint.searchComics(query: trimmedQuery, offset: offset, limit: limit)
+        let response = try await networkService.request(endpoint, responseType: MarvelResponse<Comic>.self)
+        return response.data.results
+    }
+
+    public func fetchComics(offset: Int = 0, limit: Int = 20) async throws -> [Comic] {
+        let endpoint = MarvelEndpoint.comics(offset: offset, limit: limit)
+        let response = try await networkService.request(endpoint, responseType: MarvelResponse<Comic>.self)
         return response.data.results
     }
 }

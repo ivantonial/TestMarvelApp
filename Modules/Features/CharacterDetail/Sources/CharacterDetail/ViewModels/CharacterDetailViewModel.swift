@@ -12,53 +12,47 @@ import SwiftUI
 
 @MainActor
 public final class CharacterDetailViewModel: ObservableObject {
-    @Published public var character: MarvelAPI.Character
+    // MARK: - Published Properties
+    @Published public var detailModel: CharacterDetailModel
     @Published public var isLoading = false
     @Published public var error: Error?
     @Published public var isFavorite = false
-    @Published public var recentComics: [ComicSummary] = []
-    @Published public var recentSeries: [SeriesSummary] = []
-    @Published public var relatedCharacters: [MarvelAPI.Character] = []
-    @Published public var comicsCount = 0
-    @Published public var seriesCount = 0
-    @Published public var storiesCount = 0
-    @Published public var eventsCount = 0
 
+    // MARK: - Private Properties
     private let fetchCharacterDetailUseCase: FetchCharacterDetailUseCase?
     private let fetchCharacterComicsUseCase: FetchCharacterComicsUseCase?
     private let favoritesService: FavoritesServiceProtocol?
 
+    // MARK: - Computed Properties
     public var hasRelatedContent: Bool {
-        !recentComics.isEmpty || !recentSeries.isEmpty
+        detailModel.relatedContent.hasContent
     }
-    public var wikiURL: URL? {
-        character.urls.first(where: { $0.type == .wiki }).flatMap { URL(string: $0.url) }
-    }
-    public var detailURL: URL? {
-        character.urls.first(where: { $0.type == .detail }).flatMap { URL(string: $0.url) }
-    }
-    public var hasComics: Bool { character.comics.available > 0 }
-    public var hasSeries: Bool { character.series.available > 0 }
-    public var shareText: String { "Check out \(character.name) on Marvel! \(detailURL?.absoluteString ?? "")" }
 
+    public var hasComics: Bool {
+        detailModel.character.comics.available > 0
+    }
+
+    public var shareItems: [Any] {
+        detailModel.shareInfo.shareItems
+    }
+
+    // MARK: - Initialization
     public init(
         character: MarvelAPI.Character,
         fetchCharacterDetailUseCase: FetchCharacterDetailUseCase? = nil,
         fetchCharacterComicsUseCase: FetchCharacterComicsUseCase? = nil,
         favoritesService: FavoritesServiceProtocol? = nil
     ) {
-        self.character = character
+        self.detailModel = CharacterDetailModel(from: character)
         self.fetchCharacterDetailUseCase = fetchCharacterDetailUseCase
         self.fetchCharacterComicsUseCase = fetchCharacterComicsUseCase
         self.favoritesService = favoritesService
         loadInitialData()
     }
 
+    // MARK: - Public Methods
     public func loadCharacterDetails() {
-        guard fetchCharacterDetailUseCase != nil else {
-            extractRelatedContent()
-            return
-        }
+        guard fetchCharacterDetailUseCase != nil else { return }
         Task { await fetchFullCharacterDetails() }
     }
 
@@ -66,97 +60,85 @@ public final class CharacterDetailViewModel: ObservableObject {
         Task { await toggleFavoriteAsync() }
     }
 
-    private func toggleFavoriteAsync() async {
-        isFavorite.toggle()
-        await saveFavoriteStatus()
-        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-        impactFeedback.prepare()
-        impactFeedback.impactOccurred()
-    }
-
-    public func shareCharacter() -> [Any] {
-        var items: [Any] = [shareText]
-        if let url = detailURL { items.append(url) }
-        if let imageURL = character.thumbnail.secureUrl { items.append(imageURL) }
-        return items
-    }
-
     public func refresh() {
         Task { await fetchFullCharacterDetails() }
     }
 
+    // MARK: - Private Methods
     private func loadInitialData() {
-        extractRelatedContent()
-        updateStatsCounts()
         Task { await loadFavoriteStatus() }
-    }
-
-    private func extractRelatedContent() {
-        recentComics = Array(character.comics.items.prefix(5))
-        recentSeries = Array(character.series.items.prefix(5))
-    }
-
-    private func updateStatsCounts() {
-        comicsCount = character.comics.available
-        seriesCount = character.series.available
-        storiesCount = character.stories.available
-        eventsCount = character.events.available
     }
 
     private func fetchFullCharacterDetails() async {
         isLoading = true
         error = nil
         defer { isLoading = false }
+
         do {
             if let useCase = fetchCharacterDetailUseCase {
-                let updatedCharacter = try await useCase.execute(characterId: character.id)
-                character = updatedCharacter
-                extractRelatedContent()
-                updateStatsCounts()
+                let updatedCharacter = try await useCase.execute(characterId: detailModel.character.id)
+                detailModel = CharacterDetailModel(from: updatedCharacter)
             }
+
             if let comicsUseCase = fetchCharacterComicsUseCase {
-                _ = try await comicsUseCase.execute(characterId: character.id, limit: 10)
+                _ = try await comicsUseCase.execute(characterId: detailModel.character.id, limit: 10)
             }
         } catch {
             self.error = error
-            print("❌ Erro ao carregar detalhes: \(error)")
+            print("⌛ Erro ao carregar detalhes: \(error)")
         }
+    }
+
+    private func toggleFavoriteAsync() async {
+        isFavorite.toggle()
+        await saveFavoriteStatus()
+
+        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+        impactFeedback.prepare()
+        impactFeedback.impactOccurred()
     }
 
     private func loadFavoriteStatus() async {
         guard let service = favoritesService else {
             let favorites = UserDefaults.standard.array(forKey: "FavoriteCharacters") as? [Int] ?? []
-            isFavorite = favorites.contains(character.id)
+            isFavorite = favorites.contains(detailModel.character.id)
             return
         }
-        isFavorite = await service.isFavorite(characterId: character.id)
+        isFavorite = await service.isFavorite(characterId: detailModel.character.id)
     }
 
     private func saveFavoriteStatus() async {
         guard let service = favoritesService else {
-            var favorites = UserDefaults.standard.array(forKey: "FavoriteCharacters") as? [Int] ?? []
-            if isFavorite {
-                if !favorites.contains(character.id) { favorites.append(character.id) }
-            } else {
-                favorites.removeAll { $0 == character.id }
-            }
-            UserDefaults.standard.set(favorites, forKey: "FavoriteCharacters")
+            saveFavoriteToUserDefaults()
             return
         }
+
         do {
             if isFavorite {
                 let input = FavoriteCharacterInput(
-                    id: character.id,
-                    name: character.name,
-                    thumbnailURL: character.thumbnail.secureUrl
+                    id: detailModel.character.id,
+                    name: detailModel.character.name,
+                    thumbnailURL: detailModel.character.thumbnail.secureUrl
                 )
                 try await service.addFavorite(character: input)
             } else {
-                try await service.removeFavorite(characterId: character.id)
+                try await service.removeFavorite(characterId: detailModel.character.id)
             }
         } catch {
-            print("❌ Erro ao salvar favorito: \(error)")
-            isFavorite.toggle()
+            print("⌛ Erro ao salvar favorito: \(error)")
+            isFavorite.toggle() // Reverte em caso de erro
         }
+    }
+
+    private func saveFavoriteToUserDefaults() {
+        var favorites = UserDefaults.standard.array(forKey: "FavoriteCharacters") as? [Int] ?? []
+        if isFavorite {
+            if !favorites.contains(detailModel.character.id) {
+                favorites.append(detailModel.character.id)
+            }
+        } else {
+            favorites.removeAll { $0 == detailModel.character.id }
+        }
+        UserDefaults.standard.set(favorites, forKey: "FavoriteCharacters")
     }
 }
