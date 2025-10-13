@@ -5,8 +5,8 @@
 //  Created by Ivan Tonial IP.TV on 13/10/25.
 //
 
-import Foundation
 import Core
+import Foundation
 
 public struct MarvelURL: Decodable, Sendable {
     public let type: URLType

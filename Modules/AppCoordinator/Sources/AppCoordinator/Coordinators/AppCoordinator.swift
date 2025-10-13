@@ -2,16 +2,16 @@
 // https://docs.swift.org/swift-book
 
 // MARK: - Antigo - s/ tab
-//import CharacterDetail
-//import CharacterList
-//import ComicsList
-//import Core
-//import MarvelAPI
-//import Networking
-//import SwiftUI
+// import CharacterDetail
+// import CharacterList
+// import ComicsList
+// import Core
+// import MarvelAPI
+// import Networking
+// import SwiftUI
 //
-//@MainActor
-//public final class AppCoordinator: ObservableObject {
+// @MainActor
+// public final class AppCoordinator: ObservableObject {
 //    @Published public var navigationPath = NavigationPath()
 //
 //    private let networkService: NetworkServiceProtocol
@@ -115,7 +115,7 @@
 //    public func navigateToRoot() {
 //        navigationPath.removeLast(navigationPath.count)
 //    }
-//}
+// }
 //
 // MARK: Novo - com tabs
 import CharacterDetail

@@ -6,8 +6,8 @@
 //
 
 import DesignSystem
-import SwiftUI
 import MarvelAPI
+import SwiftUI
 
 /// Componente otimizado para carregar imagens da Marvel API com tamanhos apropriados
 public struct MarvelAsyncImageComponent: View {
@@ -55,7 +55,6 @@ public struct MarvelAsyncImageComponent: View {
         // Último fallback — usa o secureUrl direto
         return img.secureUrl
     }
-
 
     // MARK: - Initialization
     public init(

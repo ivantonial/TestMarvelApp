@@ -5,8 +5,8 @@
 //  Created by Ivan Tonial IP.TV on 13/10/25.
 //
 
-import Foundation
 import Core
+import Foundation
 
 public struct StoryList: Decodable, Sendable {
     public let available: Int
