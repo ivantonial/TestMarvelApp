@@ -1,5 +1,4 @@
-import DesignSystem
-import MarvelAPI
+
 //
 //  CharacterDetailHeaderImageView.swift
 //  CharacterDetail
@@ -64,6 +63,8 @@ import MarvelAPI
 // }
 //
 
+import DesignSystem
+import MarvelAPI
 import SwiftUI
 
 struct CharacterDetailHeaderImageView: View {

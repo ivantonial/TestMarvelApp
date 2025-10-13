@@ -1,4 +1,3 @@
-import DesignSystem
 //
 //  ComicCardModel.swift
 //  ComicsList
@@ -6,6 +5,7 @@ import DesignSystem
 //  Created by Ivan Tonial IP.TV on 10/10/25.
 //
 
+import DesignSystem
 import Foundation
 import MarvelAPI
 import SwiftUI
