@@ -5,8 +5,8 @@
 //  Created by Ivan Tonial IP.TV on 13/10/25.
 //
 
-import SwiftUI
 import MarvelAPI
+import SwiftUI
 
 // MARK: - Card Configuration Model
 public struct ContentCardModel: Identifiable {

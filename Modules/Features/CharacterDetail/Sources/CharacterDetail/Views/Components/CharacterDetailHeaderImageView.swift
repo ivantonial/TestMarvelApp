@@ -1,3 +1,4 @@
+
 //
 //  CharacterDetailHeaderImageView.swift
 //  CharacterDetail
@@ -5,9 +6,9 @@
 //  Created by Ivan Tonial IP.TV on 10/10/25.
 //
 
-//import SwiftUI
+// import SwiftUI
 //
-//struct CharacterDetailHeaderImageView: View {
+// struct CharacterDetailHeaderImageView: View {
 //    let imageURL: URL?
 //
 //    var body: some View {
@@ -59,13 +60,12 @@
 //            endPoint: .bottom
 //        )
 //    }
-//}
+// }
 //
 
-
-import SwiftUI
-import MarvelAPI
 import DesignSystem
+import MarvelAPI
+import SwiftUI
 
 struct CharacterDetailHeaderImageView: View {
     let marvelImage: MarvelImage?
