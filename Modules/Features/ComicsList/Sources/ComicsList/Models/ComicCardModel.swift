@@ -1,3 +1,4 @@
+import DesignSystem
 //
 //  ComicCardModel.swift
 //  ComicsList
@@ -7,7 +8,6 @@
 
 import Foundation
 import MarvelAPI
-import DesignSystem
 import SwiftUI
 
 public struct ComicCardModel: Identifiable, ContentCardConvertible {

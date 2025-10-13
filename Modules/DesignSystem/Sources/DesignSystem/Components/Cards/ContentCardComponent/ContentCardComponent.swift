@@ -1,3 +1,4 @@
+import MarvelAPI
 //
 //  ContentCardComponent.swift
 //  DesignSystem
@@ -6,7 +7,6 @@
 //
 
 import SwiftUI
-import MarvelAPI
 
 // MARK: - Card Configuration Model
 public struct ContentCardModel: Identifiable {

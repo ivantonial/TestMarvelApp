@@ -1,3 +1,4 @@
+import Core
 //
 //  MarvelURL.swift
 //  MarvelAPI
@@ -6,7 +7,6 @@
 //
 
 import Foundation
-import Core
 
 public struct MarvelURL: Decodable, Sendable {
     public let type: URLType

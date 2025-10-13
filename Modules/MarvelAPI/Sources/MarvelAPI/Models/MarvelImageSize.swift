@@ -74,7 +74,7 @@ public enum MarvelImageSize: String, CaseIterable, Sendable {
         switch self {
         case .portraitSmall, .portraitMedium, .portraitXLarge,
              .portraitFantastic, .portraitUncanny, .portraitIncredible:
-            return 2.0/3.0
+            return 2.0 / 3.0
 
         case .standardSmall, .standardMedium, .standardLarge,
              .standardXLarge, .standardFantastic, .standardAmazing:
@@ -82,7 +82,7 @@ public enum MarvelImageSize: String, CaseIterable, Sendable {
 
         case .landscapeSmall, .landscapeMedium, .landscapeLarge,
              .landscapeXLarge, .landscapeAmazing, .landscapeIncredible:
-            return 16.0/9.0
+            return 16.0 / 9.0
 
         case .full:
             return 0 // Aspect ratio variável

@@ -1,3 +1,4 @@
+import Core
 //
 //  Story.swift
 //  MarvelAPI
@@ -6,7 +7,6 @@
 //
 
 import Foundation
-import Core
 
 public struct StoryList: Decodable, Sendable {
     public let available: Int

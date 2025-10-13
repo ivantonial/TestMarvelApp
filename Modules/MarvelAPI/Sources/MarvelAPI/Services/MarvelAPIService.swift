@@ -32,7 +32,6 @@ public enum MarvelEndpoint: APIEndpoint {
     case searchComics(query: String, offset: Int = 0, limit: Int = 20)
     case comics(offset: Int = 0, limit: Int = 20)
 
-
     nonisolated(unsafe) private static var config: MarvelAPIConfig?
 
     public static func configure(with config: MarvelAPIConfig) {
