@@ -1,6 +1,3 @@
-// The Swift Programming Language
-// https://docs.swift.org/swift-book
-
 import CharacterDetail
 import CharacterList
 import ComicsList
@@ -22,10 +19,10 @@ public final class AppCoordinator: ObservableObject {
         let publicKey = Bundle.main.object(forInfoDictionaryKey: "MARVEL_PUBLIC_KEY") as? String ?? ""
         let privateKey = Bundle.main.object(forInfoDictionaryKey: "MARVEL_PRIVATE_KEY") as? String ?? ""
 
-        // 🔍 (Opcional) Logar as chaves para debug — remova em produção
+        // 📝 (Opcional) Logar as chaves para debug – remova em produção
         #if DEBUG
         print("🔑 Marvel Public Key:", publicKey.isEmpty ? "❌ Vazia" : "✅ Encontrada")
-        print("🔒 Marvel Private Key:", privateKey.isEmpty ? "❌ Vazia" : "✅ Encontrada")
+        print("🔐 Marvel Private Key:", privateKey.isEmpty ? "❌ Vazia" : "✅ Encontrada")
         #endif
 
         // ⚙️ Configurar Marvel API
@@ -47,12 +44,12 @@ public final class AppCoordinator: ObservableObject {
             )
         ) {
             self.characterListView()
-                .navigationDestination(for: CharacterDestination.self) { [weak self] destination in
+                .navigationDestination(for: CharacterDestination.self) { destination in
                     switch destination {
                     case .detail(let character):
-                        self?.characterDetailView(character: character)
+                        self.characterDetailView(character: character)
                     case .comics(let character):
-                        self?.comicsListView(character: character)
+                        self.comicsListView(character: character)
                     }
                 }
         }
@@ -64,8 +61,8 @@ public final class AppCoordinator: ObservableObject {
         let useCase = FetchCharactersUseCase(service: marvelService)
         let viewModel = CharacterListViewModel(fetchCharactersUseCase: useCase)
 
-        CharacterListView(viewModel: viewModel) { [weak self] character in
-            self?.navigate(to: .detail(character))
+        CharacterListView(viewModel: viewModel) { character in
+            self.navigate(to: .detail(character))
         }
     }
 
@@ -83,8 +80,8 @@ public final class AppCoordinator: ObservableObject {
 
         CharacterDetailView(
             viewModel: viewModel,
-            onComicsSelected: { [weak self] in
-                self?.navigate(to: .comics(character))
+            onComicsSelected: {
+                self.navigate(to: .comics(character))
             }
         )
     }
