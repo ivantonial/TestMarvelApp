@@ -5,61 +5,6 @@
 //  Created by Ivan Tonial IP.TV on 10/10/25.
 //
 
-//import Foundation
-//import MarvelAPI
-//import DesignSystem
-//import SwiftUI
-//
-//public struct ComicCardModel: Identifiable {
-//    public let id: Int
-//    public let title: String
-//    public let description: String?
-//    public let marvelImage: MarvelImage?
-//    public let aspectRatio: CGFloat
-//
-//    public init(id: Int, title: String, description: String?, marvelImage: MarvelImage?, aspectRatio: CGFloat = 0.75) {
-//        self.id = id
-//        self.title = title
-//        self.description = description
-//        self.marvelImage = marvelImage
-//        self.aspectRatio = aspectRatio
-//    }
-//
-//    public init(from comic: Comic) {
-//        self.id = comic.id
-//        self.title = comic.title
-//        self.description = comic.description
-//        self.marvelImage = comic.thumbnail
-//        self.aspectRatio = 0.75
-//    }
-//}
-//
-//// MARK: - Extensão para conversão ao modelo de card do DesignSystem
-//public extension ComicCardModel {
-//    func toContentCardModel() -> ContentCardModel {
-//        // Escolhe o modo de exibição da imagem
-//        // `.fit` para HQs verticais (mantém a proporção da capa)
-//        let mode: ContentMode = aspectRatio < 0.9 ? .fit : .fill
-//
-//        // Cria badge opcional (caso queira destacar o tipo de mídia)
-//        let badge = ContentCardModel.BadgeModel(
-//            icon: "book.pages.fill",
-//            text: "HQ",
-//            color: .red
-//        )
-//
-//        return ContentCardModel(
-//            id: id,
-//            title: title,
-//            subtitle: description?.isEmpty == false ? description : nil,
-//            marvelImage: marvelImage,
-//            aspectRatio: aspectRatio,
-//            contentMode: mode,
-//            badge: badge
-//        )
-//    }
-//}
-
 import Foundation
 import MarvelAPI
 import DesignSystem

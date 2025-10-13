@@ -21,7 +21,10 @@ let package = Package(
         .package(path: "../Networking"),
         .package(path: "../Features/CharacterList"),
         .package(path: "../Features/CharacterDetail"),
-        .package(path: "../Features/ComicsList")
+        .package(path: "../Features/ComicsList"),
+        .package(path: "../Features/Favorites"),
+        .package(path: "../Features/Search"),
+        .package(path: "../Features/Settings")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -34,7 +37,10 @@ let package = Package(
                 "Networking",
                 "CharacterList",
                 "CharacterDetail",
-                "ComicsList"
+                "ComicsList",
+                "Favorites",
+                "Search",
+                "Settings"
             ]
         ),
         .testTarget(
