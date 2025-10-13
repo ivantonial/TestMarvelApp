@@ -13,11 +13,28 @@ import SwiftUI
 public struct ComicsListView: View {
     @StateObject private var viewModel: ComicsListViewModel
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
-    private let gridColumns = [
-        GridItem(.flexible(), spacing: 16),
-        GridItem(.flexible(), spacing: 16)
-    ]
+    // Adaptação para portrait/landscape
+    private var gridColumns: [GridItem] {
+        let isLandscape = verticalSizeClass == .compact
+        let isPad = horizontalSizeClass == .regular && verticalSizeClass == .regular
+
+        if isLandscape {
+            // 4 colunas em landscape
+            return Array(repeating: GridItem(.flexible(), spacing: 16), count: 4)
+        } else if isPad {
+            // 3 colunas no iPad
+            return Array(repeating: GridItem(.flexible(), spacing: 16), count: 3)
+        } else {
+            // 2 colunas em portrait
+            return [
+                GridItem(.flexible(), spacing: 16),
+                GridItem(.flexible(), spacing: 16)
+            ]
+        }
+    }
 
     public init(viewModel: ComicsListViewModel) {
         self._viewModel = StateObject(wrappedValue: viewModel)
@@ -122,9 +139,11 @@ public struct ComicsListView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
                 ForEach(ComicFilter.allCases, id: \.self) { filter in
-                    FilterPill(
+                    FilterPillComponent(
                         title: filter.title,
                         isSelected: viewModel.selectedFilter == filter,
+                        style: .primary,
+                        selectedColor: .red,
                         action: {
                             viewModel.selectFilter(filter)
                         }
@@ -136,25 +155,27 @@ public struct ComicsListView: View {
         }
     }
 
-    // MARK: - Comics Grid
+    // MARK: - Comics Grid usando ContentCardComponent
     private var comicsGrid: some View {
         ScrollView {
             LazyVGrid(columns: gridColumns, spacing: 16) {
                 ForEach(viewModel.filteredComics) { comic in
-                    ComicCardView(comic: comic)
-                        .onTapGesture {
+                    ContentCardComponent(
+                        model: ComicCardModel(from: comic).toContentCardModel(),
+                        onTap: {
                             viewModel.selectComic(comic)
                         }
-                        .onAppear {
-                            viewModel.loadMoreIfNeeded(currentComic: comic)
-                        }
+                    )
+                    .onAppear {
+                        viewModel.loadMoreIfNeeded(currentComic: comic)
+                    }
                 }
 
                 if viewModel.isLoading && !viewModel.comics.isEmpty {
                     ProgressView()
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .gridCellColumns(2)
+                        .gridCellColumns(gridColumns.count)
                 }
             }
             .padding(.horizontal)
@@ -192,99 +213,5 @@ public struct ComicsListView: View {
 
     private func refreshData() async {
         viewModel.refresh()
-    }
-}
-
-// MARK: - Comic Card View
-struct ComicCardView: View {
-    let comic: Comic
-
-    var body: some View {
-        VStack(spacing: 0) {
-            // Comic Cover
-            AsyncImage(url: comic.thumbnail.secureUrl) { phase in
-                switch phase {
-                case .empty:
-                    ZStack {
-                        Color.gray.opacity(0.2)
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .red))
-                    }
-                    .aspectRatio(0.77, contentMode: .fit)
-
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(maxWidth: .infinity)
-                        .aspectRatio(0.77, contentMode: .fit)
-                        .clipped()
-
-                case .failure:
-                    ZStack {
-                        Color.gray.opacity(0.2)
-                        Image(systemName: "photo")
-                            .font(.system(size: 30))
-                            .foregroundColor(.gray)
-                    }
-                    .aspectRatio(0.77, contentMode: .fit)
-
-                @unknown default:
-                    Color.gray.opacity(0.2)
-                        .aspectRatio(0.77, contentMode: .fit)
-                }
-            }
-
-            // Comic Info
-            VStack(alignment: .leading, spacing: 4) {
-                Text(comic.title)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.white)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.9)
-
-                if let description = comic.description, !description.isEmpty {
-                    Text(description)
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                        .lineLimit(2)
-                }
-            }
-            .padding(10)
-            .frame(maxWidth: .infinity, minHeight: 60, alignment: .topLeading)
-            .background(Color.black.opacity(0.8))
-        }
-        .background(Color.gray.opacity(0.2))
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.red.opacity(0.3), lineWidth: 1)
-        )
-        .shadow(color: .red.opacity(0.2), radius: 5, x: 0, y: 2)
-    }
-}
-
-// MARK: - Filter Pill
-struct FilterPill: View {
-    let title: String
-    let isSelected: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(isSelected ? .black : .white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(
-                    Capsule()
-                        .fill(isSelected ? Color.red : Color.white.opacity(0.1))
-                )
-                .overlay(
-                    Capsule()
-                        .stroke(isSelected ? Color.clear : Color.red.opacity(0.3), lineWidth: 1)
-                )
-        }
     }
 }
