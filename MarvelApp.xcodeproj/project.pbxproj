@@ -7,12 +7,18 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5663CD8A2E98A19600D754C5 /* Settings in Frameworks */ = {isa = PBXBuildFile; productRef = 5663CD892E98A19600D754C5 /* Settings */; };
 		56A0DAB42E95898B009D8CBE /* Core in Frameworks */ = {isa = PBXBuildFile; productRef = 56A0DAB32E95898B009D8CBE /* Core */; };
 		56A0DAB62E95898F009D8CBE /* Networking in Frameworks */ = {isa = PBXBuildFile; productRef = 56A0DAB52E95898F009D8CBE /* Networking */; };
 		56A0DAB82E958992009D8CBE /* MarvelAPI in Frameworks */ = {isa = PBXBuildFile; productRef = 56A0DAB72E958992009D8CBE /* MarvelAPI */; };
 		56A0DABA2E958996009D8CBE /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 56A0DAB92E958996009D8CBE /* DesignSystem */; };
 		56A0DABC2E95899B009D8CBE /* CharacterList in Frameworks */ = {isa = PBXBuildFile; productRef = 56A0DABB2E95899B009D8CBE /* CharacterList */; };
 		56A0DABE2E9589A0009D8CBE /* AppCoordinator in Frameworks */ = {isa = PBXBuildFile; productRef = 56A0DABD2E9589A0009D8CBE /* AppCoordinator */; };
+		56DF9C242E989A470072499D /* Cache in Frameworks */ = {isa = PBXBuildFile; productRef = 56DF9C232E989A470072499D /* Cache */; };
+		56DF9C262E989A4C0072499D /* Favorites in Frameworks */ = {isa = PBXBuildFile; productRef = 56DF9C252E989A4C0072499D /* Favorites */; };
+		56DF9C282E989A560072499D /* Search in Frameworks */ = {isa = PBXBuildFile; productRef = 56DF9C272E989A560072499D /* Search */; };
+		56DF9C2A2E989A5F0072499D /* ComicsList in Frameworks */ = {isa = PBXBuildFile; productRef = 56DF9C292E989A5F0072499D /* ComicsList */; };
+		56DF9C2C2E989A670072499D /* CharacterDetail in Frameworks */ = {isa = PBXBuildFile; productRef = 56DF9C2B2E989A670072499D /* CharacterDetail */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -64,10 +70,16 @@
 			buildActionMask = 2147483647;
 			files = (
 				56A0DABC2E95899B009D8CBE /* CharacterList in Frameworks */,
+				56DF9C242E989A470072499D /* Cache in Frameworks */,
+				56DF9C2C2E989A670072499D /* CharacterDetail in Frameworks */,
 				56A0DAB62E95898F009D8CBE /* Networking in Frameworks */,
 				56A0DAB82E958992009D8CBE /* MarvelAPI in Frameworks */,
+				56DF9C262E989A4C0072499D /* Favorites in Frameworks */,
+				56DF9C282E989A560072499D /* Search in Frameworks */,
 				56A0DABE2E9589A0009D8CBE /* AppCoordinator in Frameworks */,
 				56A0DAB42E95898B009D8CBE /* Core in Frameworks */,
+				5663CD8A2E98A19600D754C5 /* Settings in Frameworks */,
+				56DF9C2A2E989A5F0072499D /* ComicsList in Frameworks */,
 				56A0DABA2E958996009D8CBE /* DesignSystem in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -145,6 +157,12 @@
 				56A0DAB92E958996009D8CBE /* DesignSystem */,
 				56A0DABB2E95899B009D8CBE /* CharacterList */,
 				56A0DABD2E9589A0009D8CBE /* AppCoordinator */,
+				56DF9C232E989A470072499D /* Cache */,
+				56DF9C252E989A4C0072499D /* Favorites */,
+				56DF9C272E989A560072499D /* Search */,
+				56DF9C292E989A5F0072499D /* ComicsList */,
+				56DF9C2B2E989A670072499D /* CharacterDetail */,
+				5663CD892E98A19600D754C5 /* Settings */,
 			);
 			productName = MarvelApp;
 			productReference = 567170992E953BD2008FDB22 /* MarvelApp.app */;
@@ -235,6 +253,12 @@
 				56A0DAAF2E958803009D8CBE /* XCLocalSwiftPackageReference "Modules/DesignSystem" */,
 				56A0DAB02E958815009D8CBE /* XCLocalSwiftPackageReference "Modules/Features/CharacterList" */,
 				56A0DAB12E95881E009D8CBE /* XCLocalSwiftPackageReference "Modules/AppCoordinator" */,
+				568643C32E98991C00189C44 /* XCLocalSwiftPackageReference "Modules/Features/CharacterDetail" */,
+				568643C42E98996C00189C44 /* XCLocalSwiftPackageReference "Modules/Features/ComicsList" */,
+				568643C52E98998400189C44 /* XCLocalSwiftPackageReference "Modules/Features/Search" */,
+				568643C62E9899A400189C44 /* XCLocalSwiftPackageReference "Modules/Features/Favorites" */,
+				56DF9C222E989A320072499D /* XCLocalSwiftPackageReference "Modules/Cache" */,
+				5663CD882E989F1F00D754C5 /* XCLocalSwiftPackageReference "Modules/Features/Settings" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 5671709A2E953BD2008FDB22 /* Products */;
@@ -635,6 +659,26 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
+		5663CD882E989F1F00D754C5 /* XCLocalSwiftPackageReference "Modules/Features/Settings" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Modules/Features/Settings;
+		};
+		568643C32E98991C00189C44 /* XCLocalSwiftPackageReference "Modules/Features/CharacterDetail" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Modules/Features/CharacterDetail;
+		};
+		568643C42E98996C00189C44 /* XCLocalSwiftPackageReference "Modules/Features/ComicsList" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Modules/Features/ComicsList;
+		};
+		568643C52E98998400189C44 /* XCLocalSwiftPackageReference "Modules/Features/Search" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Modules/Features/Search;
+		};
+		568643C62E9899A400189C44 /* XCLocalSwiftPackageReference "Modules/Features/Favorites" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Modules/Features/Favorites;
+		};
 		56A0DAAC2E9587D5009D8CBE /* XCLocalSwiftPackageReference "Modules/Core" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Modules/Core;
@@ -659,9 +703,18 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Modules/AppCoordinator;
 		};
+		56DF9C222E989A320072499D /* XCLocalSwiftPackageReference "Modules/Cache" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Modules/Cache;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		5663CD892E98A19600D754C5 /* Settings */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5663CD882E989F1F00D754C5 /* XCLocalSwiftPackageReference "Modules/Features/Settings" */;
+			productName = Settings;
+		};
 		56A0DAB32E95898B009D8CBE /* Core */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 56A0DAAC2E9587D5009D8CBE /* XCLocalSwiftPackageReference "Modules/Core" */;
@@ -691,6 +744,31 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 56A0DAB12E95881E009D8CBE /* XCLocalSwiftPackageReference "Modules/AppCoordinator" */;
 			productName = AppCoordinator;
+		};
+		56DF9C232E989A470072499D /* Cache */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 56DF9C222E989A320072499D /* XCLocalSwiftPackageReference "Modules/Cache" */;
+			productName = Cache;
+		};
+		56DF9C252E989A4C0072499D /* Favorites */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 568643C62E9899A400189C44 /* XCLocalSwiftPackageReference "Modules/Features/Favorites" */;
+			productName = Favorites;
+		};
+		56DF9C272E989A560072499D /* Search */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 568643C52E98998400189C44 /* XCLocalSwiftPackageReference "Modules/Features/Search" */;
+			productName = Search;
+		};
+		56DF9C292E989A5F0072499D /* ComicsList */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 568643C42E98996C00189C44 /* XCLocalSwiftPackageReference "Modules/Features/ComicsList" */;
+			productName = ComicsList;
+		};
+		56DF9C2B2E989A670072499D /* CharacterDetail */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 568643C32E98991C00189C44 /* XCLocalSwiftPackageReference "Modules/Features/CharacterDetail" */;
+			productName = CharacterDetail;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

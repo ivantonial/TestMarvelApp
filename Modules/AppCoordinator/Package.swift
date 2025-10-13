@@ -17,7 +17,14 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../Core"),
-        .package(path: "../Features/CharacterList")
+        .package(path: "../MarvelAPI"),
+        .package(path: "../Networking"),
+        .package(path: "../Features/CharacterList"),
+        .package(path: "../Features/CharacterDetail"),
+        .package(path: "../Features/ComicsList"),
+        .package(path: "../Features/Favorites"),
+        .package(path: "../Features/Search"),
+        .package(path: "../Features/Settings")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -26,7 +33,14 @@ let package = Package(
             name: "AppCoordinator",
             dependencies: [
                 "Core",
-                "CharacterList"
+                "MarvelAPI",
+                "Networking",
+                "CharacterList",
+                "CharacterDetail",
+                "ComicsList",
+                "Favorites",
+                "Search",
+                "Settings"
             ]
         ),
         .testTarget(
