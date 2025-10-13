@@ -160,12 +160,9 @@ public struct ComicsListView: View {
         ScrollView {
             LazyVGrid(columns: gridColumns, spacing: 16) {
                 ForEach(viewModel.filteredComics) { comic in
-                    ContentCardComponent(
-                        model: ComicCardModel(from: comic).toContentCardModel(),
-                        onTap: {
-                            viewModel.selectComic(comic)
-                        }
-                    )
+                    ComicCardView(model: ComicCardModel(from: comic)) {
+                        viewModel.selectComic(comic)
+                    }
                     .onAppear {
                         viewModel.loadMoreIfNeeded(currentComic: comic)
                     }

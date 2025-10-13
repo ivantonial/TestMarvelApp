@@ -102,6 +102,12 @@ public enum MarvelImageSize: String, CaseIterable, Sendable {
             return .portraitXLarge
         case .cardLarge:
             return .portraitFantastic
+        case .cardSquareSmall:
+            return .standardSmall
+        case .cardSquareMedium:
+            return .standardMedium
+        case .cardSquareLarge:
+            return .standardXLarge
         case .heroImage:
             return .landscapeIncredible
         case .detailHeader:
@@ -119,6 +125,9 @@ public enum ImageContext: Sendable {
     case cardSmall
     case cardMedium
     case cardLarge
+    case cardSquareSmall
+    case cardSquareMedium
+    case cardSquareLarge
     case heroImage
     case detailHeader
     case fullScreen

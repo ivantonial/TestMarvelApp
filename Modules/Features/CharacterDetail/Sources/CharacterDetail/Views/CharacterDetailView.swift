@@ -30,7 +30,7 @@ public struct CharacterDetailView: View {
             ScrollView {
                 VStack(spacing: 0) {
                     CharacterDetailHeaderImageView(
-                        imageURL: viewModel.detailModel.character.thumbnail.secureUrl
+                        marvelImage: viewModel.detailModel.character.thumbnail
                     )
 
                     contentSection
