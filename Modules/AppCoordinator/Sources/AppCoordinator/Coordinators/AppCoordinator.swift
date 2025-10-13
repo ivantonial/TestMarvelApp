@@ -1,7 +1,7 @@
 // The Swift Programming Language
 // https://docs.swift.org/swift-book
 
-// MARK: - Antigo - funcionando s/ tab
+// MARK: - Antigo - s/ tab
 //import CharacterDetail
 //import CharacterList
 //import ComicsList
@@ -117,7 +117,7 @@
 //    }
 //}
 //
-// MARK: Novo - com erros
+// MARK: Novo - com tabs
 import CharacterDetail
 import CharacterList
 import ComicsList
