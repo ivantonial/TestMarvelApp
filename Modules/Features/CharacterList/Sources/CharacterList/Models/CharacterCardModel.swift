@@ -17,12 +17,22 @@ public struct CharacterCardModel: Identifiable, ContentCardConvertible {
     public let comicsCount: Int
     public let aspectRatio: CGFloat
 
-    public init(id: Int, name: String, marvelImage: MarvelImage?, comicsCount: Int, aspectRatio: CGFloat = 1.0) {
+    // Aspecto padrão para personagens é quadrado (1:1)
+    private static let defaultCharacterAspectRatio: CGFloat = 1.0
+
+    public init(
+        id: Int,
+        name: String,
+        marvelImage: MarvelImage?,
+        comicsCount: Int,
+        aspectRatio: CGFloat? = nil
+    ) {
         self.id = id
         self.name = name
         self.marvelImage = marvelImage
         self.comicsCount = comicsCount
-        self.aspectRatio = aspectRatio
+        // Usa o aspect ratio fornecido ou o padrão para personagens
+        self.aspectRatio = aspectRatio ?? Self.defaultCharacterAspectRatio
     }
 
     public init(from character: Character) {
@@ -30,12 +40,15 @@ public struct CharacterCardModel: Identifiable, ContentCardConvertible {
         self.name = character.name
         self.marvelImage = character.thumbnail
         self.comicsCount = character.comics.available
-        self.aspectRatio = 1.0
+        // Personagens sempre usam o aspect ratio padrão quadrado
+        self.aspectRatio = Self.defaultCharacterAspectRatio
     }
 
     // MARK: - Conversão para ContentCardModel
     public func toContentCardModel() -> ContentCardModel {
+        // Para personagens (aspect ratio próximo de 1.0), usa .fill para preencher
         let mode: ContentMode = aspectRatio < 0.9 ? .fit : .fill
+
         return ContentCardModel(
             id: id,
             title: name,

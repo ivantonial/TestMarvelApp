@@ -5,6 +5,8 @@
 //  Created by Ivan Tonial IP.TV on 09/10/25.
 //
 
+import CharacterList
+import ComicsList
 import Core
 import DesignSystem
 import MarvelAPI
@@ -14,13 +16,16 @@ public struct SearchView: View {
     @StateObject private var viewModel: SearchViewModel
     @FocusState private var isSearchFieldFocused: Bool
     private let onCharacterSelected: ((Character) -> Void)?
+    private let onComicSelected: ((Comic) -> Void)?
 
     public init(
         viewModel: SearchViewModel,
-        onCharacterSelected: ((Character) -> Void)? = nil
+        onCharacterSelected: ((Character) -> Void)? = nil,
+        onComicSelected: ((Comic) -> Void)? = nil
     ) {
         self._viewModel = StateObject(wrappedValue: viewModel)
         self.onCharacterSelected = onCharacterSelected
+        self.onComicSelected = onComicSelected
     }
 
     public var body: some View {
@@ -29,6 +34,9 @@ public struct SearchView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
+                // Search Type Selector
+                searchTypeSelector
+
                 // Search Header
                 searchHeader
 
@@ -38,21 +46,106 @@ public struct SearchView: View {
                 }
 
                 // Main Content
-                if viewModel.isSearching {
-                    loadingView
-                } else if viewModel.hasResults {
-                    searchResultsView
-                } else if !viewModel.searchText.isEmpty {
-                    noResultsView
-                } else {
-                    defaultView
-                }
+                mainContent
             }
         }
         .navigationTitle("Search")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             isSearchFieldFocused = true
+        }
+    }
+
+    // MARK: - Search Type Selector
+    private var searchTypeSelector: some View {
+        HStack(spacing: 0) {
+            ForEach(SearchType.allCases, id: \.self) { type in
+                Button(action: {
+                    viewModel.switchSearchType(type)
+                }) {
+                    VStack(spacing: 4) {
+                        Image(systemName: type.icon)
+                            .font(.system(size: 20))
+
+                        Text(type.rawValue)
+                            .font(.caption)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .foregroundColor(viewModel.searchType == type ? .black : .white)
+                    .background(
+                        viewModel.searchType == type ?
+                        Color.red : Color.clear
+                    )
+                }
+            }
+        }
+        .background(Color.white.opacity(0.1))
+        .cornerRadius(10)
+        .padding(.horizontal)
+        .padding(.top, 10)
+    }
+
+    // MARK: - Main Content Router
+    @ViewBuilder
+    private var mainContent: some View {
+        if viewModel.isSearching {
+            loadingView
+        } else if viewModel.hasResults {
+            resultsView
+        } else if !viewModel.searchText.isEmpty {
+            noResultsView
+        } else {
+            defaultView
+        }
+    }
+
+    // MARK: - Results View Router
+    @ViewBuilder
+    private var resultsView: some View {
+        switch viewModel.searchType {
+        case .characters:
+            characterResultsView
+        case .comics:
+            comicResultsView
+        }
+    }
+
+    // MARK: - Character Results
+    private var characterResultsView: some View {
+        ScrollView {
+            LazyVStack(spacing: 12) {
+                ForEach(viewModel.filteredCharacters) { character in
+                    SearchResultCard(character: character)
+                        .onTapGesture {
+                            onCharacterSelected?(character)
+                        }
+                }
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 10)
+        }
+    }
+
+    // MARK: - Comic Results
+    private var comicResultsView: some View {
+        ScrollView {
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: 16),
+                GridItem(.flexible(), spacing: 16)
+            ], spacing: 16) {
+                ForEach(viewModel.filteredComics) { comic in
+                    // Using the same ComicCardView from ComicsList module
+                    ComicCardView(
+                        model: ComicCardModel(from: comic),
+                        onTap: {
+                            onComicSelected?(comic)
+                        }
+                    )
+                }
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 10)
         }
     }
 
@@ -72,6 +165,8 @@ public struct SearchView: View {
                     .submitLabel(.search)
                     .focused($isSearchFieldFocused)
                     .onSubmit {
+                        // Dismiss do teclado ao submeter
+                        isSearchFieldFocused = false
                         viewModel.search()
                     }
 
@@ -99,12 +194,15 @@ public struct SearchView: View {
         .background(Color.black)
     }
 
-    // MARK: - Suggestions View
+    // MARK: - Suggestions View (CORRIGIDO COM DISMISS)
     private var suggestionsView: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
-                ForEach(viewModel.suggestions, id: \.self) { suggestion in
+                // Usa enumerated() para ter um índice único ao invés do próprio texto
+                ForEach(Array(viewModel.suggestions.enumerated()), id: \.offset) { index, suggestion in
                     Button(action: {
+                        // Dismiss do teclado ao selecionar sugestão
+                        isSearchFieldFocused = false
                         viewModel.selectSuggestion(suggestion)
                     }) {
                         Text(suggestion)
@@ -127,37 +225,15 @@ public struct SearchView: View {
     // MARK: - Filter Section
     private var filterSection: some View {
         VStack(spacing: 10) {
-            // Filter Pills
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
-                    ForEach(SearchFilter.allCases, id: \.self) { filter in
+                    ForEach(viewModel.currentFilters, id: \.self) { filter in
                         FilterChip(
                             title: filter.title,
                             icon: filter.icon,
                             isSelected: viewModel.selectedFilter == filter,
                             action: {
                                 viewModel.updateFilter(filter)
-                            }
-                        )
-                    }
-                }
-                .padding(.horizontal)
-            }
-
-            // Sort Options
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    Text("Sort by:")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-
-                    ForEach(SortOption.allCases, id: \.self) { option in
-                        SortChip(
-                            title: option.title,
-                            icon: option.icon,
-                            isSelected: viewModel.sortOption == option,
-                            action: {
-                                viewModel.updateSortOption(option)
                             }
                         )
                     }
@@ -181,22 +257,6 @@ public struct SearchView: View {
                 .foregroundColor(.gray)
                 .padding(.top)
             Spacer()
-        }
-    }
-
-    // MARK: - Search Results View
-    private var searchResultsView: some View {
-        ScrollView {
-            LazyVStack(spacing: 12) {
-                ForEach(viewModel.filteredResults) { character in
-                    SearchResultCard(character: character)
-                        .onTapGesture {
-                            onCharacterSelected?(character)
-                        }
-                }
-            }
-            .padding(.horizontal)
-            .padding(.vertical, 10)
         }
     }
 
@@ -242,11 +302,10 @@ public struct SearchView: View {
                             .font(.caption)
                             .foregroundColor(.red)
                         }
-                        .padding(.horizontal)
 
-                        ForEach(Array(viewModel.recentSearches.enumerated()), id: \.offset) { index, search in
+                        ForEach(viewModel.recentSearches, id: \.self) { search in
                             HStack {
-                                Image(systemName: "clock")
+                                Image(systemName: "clock.arrow.circlepath")
                                     .font(.caption)
                                     .foregroundColor(.gray)
 
@@ -254,34 +313,26 @@ public struct SearchView: View {
                                     .foregroundColor(.white)
 
                                 Spacer()
-
-                                Button(action: {
-                                    viewModel.removeRecentSearch(at: index)
-                                }) {
-                                    Image(systemName: "xmark")
-                                        .font(.caption)
-                                        .foregroundColor(.gray)
-                                }
                             }
-                            .padding(.horizontal)
                             .padding(.vertical, 8)
                             .contentShape(Rectangle())
                             .onTapGesture {
-                                viewModel.searchText = search
-                                viewModel.search()
+                                // Dismiss do teclado ao selecionar busca recente
+                                isSearchFieldFocused = false
+                                viewModel.selectRecentSearch(search)
                             }
                         }
                     }
-                    .padding(.top, 20)
+                    .padding(.horizontal)
                 }
 
                 // Popular Characters
                 popularCharactersSection
             }
+            .padding(.top, 20)
         }
     }
 
-    // MARK: - Popular Characters Section
     private var popularCharactersSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Popular Characters")
@@ -293,6 +344,8 @@ public struct SearchView: View {
                 HStack(spacing: 15) {
                     ForEach(popularCharacters, id: \.self) { name in
                         PopularCharacterChip(name: name) {
+                            // Dismiss do teclado ao selecionar personagem popular
+                            isSearchFieldFocused = false
                             viewModel.searchText = name
                             viewModel.search()
                         }
@@ -344,33 +397,36 @@ struct SearchResultCard: View {
                 }
             }
 
-            // Character Info
             VStack(alignment: .leading, spacing: 4) {
                 Text(character.name)
                     .font(.headline)
                     .foregroundColor(.white)
-                    .lineLimit(1)
 
-                HStack(spacing: 10) {
-                    Label("\(character.comics.available)", systemImage: "book.fill")
+                // CORREÇÃO: description é String não opcional
+                if !character.description.isEmpty {
+                    Text(character.description)
                         .font(.caption)
                         .foregroundColor(.gray)
-
-                    Label("\(character.series.available)", systemImage: "tv.fill")
-                        .font(.caption)
-                        .foregroundColor(.gray)
+                        .lineLimit(2)
                 }
+
+                HStack(spacing: 15) {
+                    Label("\(character.comics.available)", systemImage: "book.fill")
+                    Label("\(character.series.available)", systemImage: "tv.fill")
+                }
+                .font(.caption2)
+                .foregroundColor(.red)
             }
 
             Spacer()
 
             Image(systemName: "chevron.right")
-                .font(.caption)
                 .foregroundColor(.gray)
+                .font(.caption)
         }
         .padding()
         .background(Color.white.opacity(0.05))
-        .cornerRadius(12)
+        .cornerRadius(10)
     }
 }
 
@@ -382,43 +438,22 @@ struct FilterChip: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 6) {
+            HStack(spacing: 4) {
                 Image(systemName: icon)
                     .font(.caption)
                 Text(title)
                     .font(.caption)
             }
-            .foregroundColor(isSelected ? .black : .white)
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
+            .foregroundColor(isSelected ? .black : .white)
             .background(
                 Capsule()
                     .fill(isSelected ? Color.red : Color.white.opacity(0.1))
             )
-        }
-    }
-}
-
-struct SortChip: View {
-    let title: String
-    let icon: String
-    let isSelected: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.caption2)
-                Text(title)
-                    .font(.caption2)
-            }
-            .foregroundColor(isSelected ? .red : .gray)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 4)
             .overlay(
                 Capsule()
-                    .stroke(isSelected ? Color.red : Color.gray.opacity(0.3), lineWidth: 1)
+                    .stroke(isSelected ? Color.clear : Color.red.opacity(0.3), lineWidth: 1)
             )
         }
     }
@@ -431,18 +466,15 @@ struct PopularCharacterChip: View {
     var body: some View {
         Button(action: action) {
             Text(name)
-                .font(.system(size: 14, weight: .medium))
+                .font(.caption)
                 .foregroundColor(.white)
                 .padding(.horizontal, 16)
-                .padding(.vertical, 10)
+                .padding(.vertical, 8)
                 .background(
-                    RoundedRectangle(cornerRadius: 20)
+                    RoundedRectangle(cornerRadius: 8)
                         .fill(
                             LinearGradient(
-                                gradient: Gradient(colors: [
-                                    Color.red.opacity(0.6),
-                                    Color.red.opacity(0.3)
-                                ]),
+                                colors: [Color.red, Color.red.opacity(0.7)],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )

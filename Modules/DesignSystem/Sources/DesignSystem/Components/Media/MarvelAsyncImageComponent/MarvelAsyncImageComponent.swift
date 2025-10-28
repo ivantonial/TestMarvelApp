@@ -20,6 +20,12 @@ public struct MarvelAsyncImageComponent: View {
 
     @State private var isImageLoaded = false
     @State private var hasError = false
+    @State private var retryCount = 0
+    @State private var autoRetryAttempts = 0
+
+    // Configuração de retry
+    private let maxAutoRetries = 3
+    private let retryDelay: TimeInterval = 1.0
 
     // Cache de tamanhos para evitar recálculo
     private var imageSize: MarvelImageSize {
@@ -37,9 +43,23 @@ public struct MarvelAsyncImageComponent: View {
         // Evita casos de path vazio
         guard !securePath.isEmpty else { return nil }
 
-        // Caso a imagem padrão "not found"
+        // Caso a imagem padrão "not found" - ajusta tamanho baseado no contexto
         if securePath.contains("image_not_available") {
-            return URL(string: "\(securePath)/\(MarvelImageSize.standardXLarge.rawValue).\(img.extension)")
+            // Para contextos de card portrait (comics), usa tamanho portrait
+            switch imageContext {
+            case .cardSmall, .cardMedium, .cardLarge, .detailHeader:
+                // Para comics e contextos portrait, usa portrait_uncanny
+                return URL(string: "\(securePath)/portrait_uncanny.\(img.extension)")
+            case .cardSquareSmall, .cardSquareMedium, .cardSquareLarge, .thumbnail, .listItem:
+                // Para contextos quadrados (characters), usa standard
+                return URL(string: "\(securePath)/standard_xlarge.\(img.extension)")
+            case .heroImage:
+                // Para hero images, usa landscape
+                return URL(string: "\(securePath)/landscape_incredible.\(img.extension)")
+            case .fullScreen:
+                // Para fullscreen, usa o tamanho completo
+                return URL(string: "\(securePath).\(img.extension)")
+            }
         }
 
         // Tenta com tamanho recomendado
@@ -73,6 +93,7 @@ public struct MarvelAsyncImageComponent: View {
 
     // MARK: - Body
     public var body: some View {
+        // Usa ID único para forçar recarregamento quando retryCount muda
         AsyncImage(url: imageURL) { phase in
             switch phase {
             case .empty:
@@ -88,104 +109,111 @@ public struct MarvelAsyncImageComponent: View {
                     .aspectRatio(contentMode: contentMode)
                     .cornerRadius(cornerRadius)
                     .onAppear {
-                        withAnimation(.easeIn(duration: 0.3)) {
-                            isImageLoaded = true
-                        }
+                        isImageLoaded = true
+                        hasError = false
+                        autoRetryAttempts = 0
                     }
 
             case .failure:
-                ZStack {
-                    placeholderBackground
-                    VStack(spacing: 10) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.system(size: iconSize * 0.8))
-                            .foregroundColor(.red.opacity(0.8))
-
-                        retryButton
-                            .padding(.horizontal, 20)
-                    }
+                if autoRetryAttempts < maxAutoRetries {
+                    loadingView
+                        .onAppear {
+                            scheduleAutoRetry()
+                        }
+                } else {
+                    errorView
+                        .onTapGesture {
+                            performManualRetry()
+                        }
                 }
-                .cornerRadius(cornerRadius)
 
             @unknown default:
                 placeholderView
             }
         }
-        .animation(.easeInOut(duration: 0.2), value: isImageLoaded)
+        .id("\(marvelImage?.path ?? "")-\(retryCount)")  // Força reload quando retryCount muda
     }
 
-    // MARK: - Loading View
-    @ViewBuilder
+    // MARK: - Retry Logic
+    private func scheduleAutoRetry() {
+        guard autoRetryAttempts < maxAutoRetries else { return }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + retryDelay) {
+            autoRetryAttempts += 1
+            retryCount += 1
+        }
+    }
+
+    private func performManualRetry() {
+        autoRetryAttempts = 0
+        retryCount += 1
+    }
+
+    // MARK: - View Components
     private var loadingView: some View {
         ZStack {
-            placeholderBackground
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.gray.opacity(0.3),
+                            Color.gray.opacity(0.1)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
 
             ProgressView()
-                .progressViewStyle(CircularProgressViewStyle(tint: .red))
+                .tint(.red)
                 .scaleEffect(0.8)
         }
-        .cornerRadius(cornerRadius)
     }
 
-    // MARK: - Placeholder View
-    @ViewBuilder
     private var placeholderView: some View {
         ZStack {
-            placeholderBackground
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.gray.opacity(0.3),
+                            Color.gray.opacity(0.1)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
 
             Image(systemName: iconForContext)
                 .font(.system(size: iconSize))
-                .foregroundColor(.gray.opacity(0.5))
+                .foregroundColor(Color.gray.opacity(0.5))
         }
-        .cornerRadius(cornerRadius)
     }
 
-    // MARK: - Error View
-    @ViewBuilder
     private var errorView: some View {
         ZStack {
-            placeholderBackground
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.red.opacity(0.2),
+                            Color.red.opacity(0.1)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
 
             VStack(spacing: 8) {
-                Image(systemName: "exclamationmark.triangle")
+                Image(systemName: "exclamationmark.triangle.fill")
                     .font(.system(size: iconSize * 0.8))
-                    .foregroundColor(.red.opacity(0.6))
+                    .foregroundColor(.red.opacity(0.7))
 
-                if imageContext == .heroImage || imageContext == .fullScreen {
-                    Text("Failed to load")
-                        .font(.caption2)
-                        .foregroundColor(.gray)
-                }
+                Text("Tap to retry")
+                    .font(.caption2)
+                    .foregroundColor(.gray)
             }
         }
-        .cornerRadius(cornerRadius)
-    }
-
-    // MARK: - Helper Views
-    private var placeholderBackground: some View {
-        Rectangle()
-            .fill(
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color.gray.opacity(0.2),
-                        Color.gray.opacity(0.15)
-                    ]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-    }
-
-    // MARK: - Retry Button
-    @ViewBuilder
-    private var retryButton: some View {
-        PrimaryButtonComponent(title: "Tentar novamente") {
-            withAnimation(.easeInOut(duration: 0.25)) {
-                hasError = false
-                isImageLoaded = false
-            }
-        }
-        .frame(maxWidth: 160, maxHeight: 40)
     }
 
     // MARK: - Helper Properties
@@ -193,8 +221,12 @@ public struct MarvelAsyncImageComponent: View {
         switch imageContext {
         case .thumbnail, .listItem:
             return "person.circle.fill"
-        case .cardSmall, .cardMedium, .cardLarge, .cardSquareSmall, .cardSquareMedium, .cardSquareLarge:
-            return "photo"
+        case .cardSmall, .cardMedium, .cardLarge:
+            // Específico para comics (portrait)
+            return "book.closed.fill"
+        case .cardSquareSmall, .cardSquareMedium, .cardSquareLarge:
+            // Específico para characters (square)
+            return "person.crop.square.fill"
         case .heroImage, .detailHeader:
             return "photo.fill"
         case .fullScreen:
@@ -236,17 +268,28 @@ public extension MarvelAsyncImageComponent {
         )
     }
 
-    /// Inicializador para cards
+    /// Inicializador para cards com detecção de tipo
     static func card(
         _ marvelImage: MarvelImage?,
         size: CardSize = .medium,
+        isPortrait: Bool = false,
         cornerRadius: CGFloat = 0
     ) -> MarvelAsyncImageComponent {
         let context: ImageContext = {
-            switch size {
-            case .small: return .cardSmall
-            case .medium: return .cardMedium
-            case .large: return .cardLarge
+            if isPortrait {
+                // Para comics e outros cards portrait
+                switch size {
+                case .small: return .cardSmall
+                case .medium: return .cardMedium
+                case .large: return .cardLarge
+                }
+            } else {
+                // Para characters e outros cards quadrados
+                switch size {
+                case .small: return .cardSquareSmall
+                case .medium: return .cardSquareMedium
+                case .large: return .cardSquareLarge
+                }
             }
         }()
 
@@ -281,22 +324,46 @@ struct MarvelAsyncImageComponent_Previews: PreviewProvider {
         extension: "jpg"
     )
 
+    static let notFoundImage = MarvelImage(
+        path: "http://i.annihil.us/u/prod/marvel/i/mg/b/40/image_not_available",
+        extension: "jpg"
+    )
+
     static var previews: some View {
         VStack(spacing: 20) {
-            // Thumbnail
-            MarvelAsyncImageComponent.thumbnail(sampleImage)
-                .frame(width: 50, height: 50)
+            Text("Normal Images")
+                .font(.headline)
 
-            // Card Small
-            MarvelAsyncImageComponent.card(sampleImage, size: .small)
-                .frame(width: 100, height: 150)
+            HStack(spacing: 10) {
+                // Thumbnail
+                MarvelAsyncImageComponent.thumbnail(sampleImage)
+                    .frame(width: 50, height: 50)
 
-            // Card Medium
-            MarvelAsyncImageComponent.card(sampleImage, size: .medium)
-                .frame(width: 150, height: 225)
+                // Card Small Square
+                MarvelAsyncImageComponent.card(sampleImage, size: .small)
+                    .frame(width: 100, height: 100)
+
+                // Card Small Portrait
+                MarvelAsyncImageComponent.card(sampleImage, size: .small, isPortrait: true)
+                    .frame(width: 100, height: 150)
+            }
+
+            Text("Not Found Images")
+                .font(.headline)
+                .padding(.top)
+
+            HStack(spacing: 10) {
+                // Not Found Square (Character)
+                MarvelAsyncImageComponent.card(notFoundImage, size: .medium)
+                    .frame(width: 150, height: 150)
+
+                // Not Found Portrait (Comic)
+                MarvelAsyncImageComponent.card(notFoundImage, size: .medium, isPortrait: true)
+                    .frame(width: 150, height: 225)
+            }
 
             // Header
-            MarvelAsyncImageComponent.header(sampleImage)
+            MarvelAsyncImageComponent.header(notFoundImage)
                 .frame(height: 300)
         }
         .padding()
