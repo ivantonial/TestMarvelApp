@@ -18,7 +18,9 @@ let package = Package(
     dependencies: [
         .package(path: "../../Core"),
         .package(path: "../../MarvelAPI"),
-        .package(path: "../../DesignSystem")
+        .package(path: "../../DesignSystem"),
+        .package(path: "../../Networking"),
+        .package(path: "../../Cache")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -28,7 +30,9 @@ let package = Package(
             dependencies: [
                 "Core",
                 "MarvelAPI",
-                "DesignSystem"
+                "DesignSystem",
+                "Networking",
+                "Cache"
             ]
         ),
         .testTarget(

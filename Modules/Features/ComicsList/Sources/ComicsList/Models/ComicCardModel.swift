@@ -17,12 +17,22 @@ public struct ComicCardModel: Identifiable, ContentCardConvertible {
     public let marvelImage: MarvelImage?
     public let aspectRatio: CGFloat
 
-    public init(id: Int, title: String, description: String?, marvelImage: MarvelImage?, aspectRatio: CGFloat = 0.75) {
+    // Aspecto padrão para comics é portrait (2:3)
+    private static let defaultComicAspectRatio: CGFloat = 0.67  // 2:3 ratio
+
+    public init(
+        id: Int,
+        title: String,
+        description: String?,
+        marvelImage: MarvelImage?,
+        aspectRatio: CGFloat? = nil
+    ) {
         self.id = id
         self.title = title
         self.description = description
         self.marvelImage = marvelImage
-        self.aspectRatio = aspectRatio
+        // Usa o aspect ratio fornecido ou o padrão para comics
+        self.aspectRatio = aspectRatio ?? Self.defaultComicAspectRatio
     }
 
     public init(from comic: Comic) {
@@ -30,12 +40,15 @@ public struct ComicCardModel: Identifiable, ContentCardConvertible {
         self.title = comic.title
         self.description = comic.description
         self.marvelImage = comic.thumbnail
-        self.aspectRatio = 0.75
+        // Comics sempre usam o aspect ratio padrão portrait
+        self.aspectRatio = Self.defaultComicAspectRatio
     }
 
     // MARK: - Conversão para ContentCardModel
     public func toContentCardModel() -> ContentCardModel {
+        // Para comics (aspect ratio menor que 0.9), usa .fit para manter proporção
         let mode: ContentMode = aspectRatio < 0.9 ? .fit : .fill
+
         return ContentCardModel(
             id: id,
             title: title,

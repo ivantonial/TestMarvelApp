@@ -19,7 +19,10 @@ let package = Package(
         .package(path: "../../Core"),
         .package(path: "../../MarvelAPI"),
         .package(path: "../../DesignSystem"),
-        .package(path: "../../Networking")
+        .package(path: "../../Networking"),
+        .package(path: "../../Cache"),
+        .package(path: "../../Features/CharacterList"),
+        .package(path: "../../Features/ComicsList")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -30,7 +33,10 @@ let package = Package(
                 "Core",
                 "MarvelAPI",
                 "DesignSystem",
-                "Networking"
+                "Networking",
+                "Cache",
+                "CharacterList",
+                "ComicsList"
             ]
         ),
         .testTarget(

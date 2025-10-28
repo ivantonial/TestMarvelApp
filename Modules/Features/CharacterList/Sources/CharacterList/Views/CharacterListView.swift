@@ -41,7 +41,9 @@ public struct CharacterListView: View {
                     Spacer()
                     ErrorComponent(
                         message: error.localizedDescription,
-                        retryAction: viewModel.refresh
+                        retryAction: {
+                            viewModel.refresh()
+                        }
                     )
                     Spacer()
                 } else {
@@ -79,16 +81,18 @@ public struct CharacterListView: View {
         ScrollView {
             LazyVGrid(columns: gridColumns(), spacing: 16) {
                 ForEach(viewModel.characterCardModels, id: \.id) { cardModel in
+                    let character = viewModel.displayCharacters.first { $0.id == cardModel.id }
+
                     CharacterCardView(
                         model: cardModel,
                         onTap: {
-                            if let character = viewModel.filteredCharacters.first(where: { $0.id == cardModel.id }) {
+                            if let character {
                                 onCharacterSelected?(character)
                             }
                         }
                     )
                     .onAppear {
-                        if let character = viewModel.filteredCharacters.first(where: { $0.id == cardModel.id }) {
+                        if let character {
                             viewModel.loadMoreIfNeeded(currentCharacter: character)
                         }
                     }
@@ -167,6 +171,6 @@ public struct CharacterListView: View {
     }
 
     private func refreshData() async {
-        viewModel.refresh()
+        await viewModel.refreshAsync()
     }
 }
